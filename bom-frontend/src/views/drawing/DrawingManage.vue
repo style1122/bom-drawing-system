@@ -14,19 +14,21 @@
         <el-button :icon="Refresh" @click="handleReset">重置</el-button>
       </div>
       <div class="toolbar-right">
-        <el-button
-          type="success"
-          :icon="Refresh"
-          :loading="erpSyncing"
-          @click="handleErpSync"
-        >ERP物料同步</el-button>
-        <el-button :icon="Connection" :loading="erpTesting" @click="handleErpTest">测试ERP连接</el-button>
-        <el-button :icon="Link" :loading="erpFlagSyncing" @click="handleErpSyncFlag">同步ERP图纸标记</el-button>
-        <el-button :icon="Upload" @click="handleUpload">上传图纸</el-button>
+        <template v-if="canEditDrawings">
+          <el-button
+            type="success"
+            :icon="Refresh"
+            :loading="erpSyncing"
+            @click="handleErpSync"
+          >ERP物料同步</el-button>
+          <el-button :icon="Connection" :loading="erpTesting" @click="handleErpTest">测试ERP连接</el-button>
+          <el-button :icon="Link" :loading="erpFlagSyncing" @click="handleErpSyncFlag">同步ERP图纸标记</el-button>
+          <el-button :icon="Upload" @click="handleUpload">上传图纸</el-button>
+        </template>
         <el-button :icon="Download" @click="handleDownloadPdf">下载PDF图纸</el-button>
         <el-button :icon="Download" @click="handleDownload3d">下载三维图纸</el-button>
         <el-button :icon="Download" @click="handleDownloadEngineering">下载工程图纸</el-button>
-        <el-button type="danger" :icon="Delete" @click="handleDelete">删除</el-button>
+        <el-button v-if="canEditDrawings" type="danger" :icon="Delete" @click="handleDelete">删除</el-button>
         <el-button :icon="View" @click="handlePreview">PDF预览</el-button>
       </div>
     </div>
@@ -100,7 +102,7 @@
         <template #default="{ row }">
           <el-button type="primary" link @click.stop="handleRowDownloadPdf(row)">下载PDF图纸</el-button>
           <el-button type="warning" link @click.stop="handleVersions(row)">版本管理</el-button>
-          <el-button type="success" link @click.stop="handleShare(row)">分享</el-button>
+          <el-button v-if="canEditDrawings" type="success" link @click.stop="handleShare(row)">分享</el-button>
         </template>
       </el-table-column>
       <template #empty>
@@ -222,7 +224,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -235,8 +237,12 @@ import {
 import { uploadDrawing, batchUploadDrawings, getDrawingsByMaterialId } from '@/api/drawing'
 import { createShare } from '@/api/share'
 import ThreeViewer from '@/components/ThreeViewer.vue'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
+const userStore = useUserStore()
+// 上传/删除等写操作仅管理员和研发工程师可用
+const canEditDrawings = computed(() => userStore.canEditDrawings)
 const loading = ref(false)
 const error = ref('')
 const keyword = ref('')

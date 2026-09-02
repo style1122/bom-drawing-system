@@ -1,11 +1,12 @@
 package com.bom.mapper;
 
 import com.bom.entity.AuditLog;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-public interface AuditLogMapper {
+public interface AuditLogMapper extends BaseMapper<AuditLog> {
 
     int insert(AuditLog log);
 

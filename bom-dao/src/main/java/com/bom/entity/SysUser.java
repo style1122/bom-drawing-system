@@ -1,21 +1,36 @@
 package com.bom.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 
+@TableName("sys_user")
 public class SysUser {
 
+    @TableId(type = IdType.AUTO)
     private Long id;
     private String username;
+    @TableField("password_hash")
     private String passwordHash;
+    @TableField("display_name")
     private String displayName;
     private String role;
     private String status;
+    @TableField("reject_reason")
     private String rejectReason;
+    @TableField("reviewed_by")
     private Long reviewedBy;
+    @TableField("reviewed_at")
     private Date reviewedAt;
+    @TableField("login_failures")
     private Integer loginFailures;
+    @TableField("locked_until")
     private Date lockedUntil;
+    @TableField("last_login_at")
     private Date lastLoginAt;
+    @TableField("created_at")
     private Date createdAt;
 
     public Long getId() { return id; }

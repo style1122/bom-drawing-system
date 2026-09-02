@@ -1,35 +1,60 @@
 package com.bom.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
 import java.util.Date;
 
+@TableName("material")
 public class Material {
 
+    @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("material_code")
     private String materialCode;
+    @TableField("material_name")
     private String materialName;
     private String specification;
+    @TableField("drawing_no")
     private String drawingNo;          // 图号
+    @TableField("material_type")
     private String materialType;
     private String unit;
+    @TableField("material_category")
     private String materialCategory;     // 物料类别（ERP MaterialCategoryId）
+    @TableField("validity_from_date")
     private String validityFromDate;     // 有效期从（yyyy-MM-dd，ERP 同步）
+    @TableField("validity_to_date")
     private String validityToDate;       // 有效期至（yyyy-MM-dd，ERP 同步）
+    @TableField("erp_have_drawing")
     private Integer erpHaveDrawing;      // ERP 是否存在图纸标记（0=否 1=是，ERP 同步）
     private BigDecimal weight;
+    @TableField("material_attr")
     private String materialAttr;
     private String source;
+    @TableField("erp_sync_time")
     private Date erpSyncTime;
+    @TableField("created_by")
     private Long createdBy;
+    @TableField("created_at")
     private Date createdAt;
+    @TableField("updated_at")
     private Date updatedAt;
 
     // 非持久化：图纸统计字段（从 drawing 表 JOIN 计算）
+    @TableField(exist = false)
     private Boolean hasDrawing;        // 是否有图纸
+    @TableField(exist = false)
     private Boolean has3d;             // 是否有三维(STEP/STP)
+    @TableField(exist = false)
     private Boolean hasEngineering;    // 是否有工程图(DWG/DXF)
+    @TableField(exist = false)
     private Date drawingAddDate;       // 图纸新增日期
+    @TableField(exist = false)
     private Date drawingUpdateDate;    // 图纸修改时间
+    @TableField(exist = false)
     private Integer drawingCount;      // 图纸数量
 
     public Long getId() { return id; }

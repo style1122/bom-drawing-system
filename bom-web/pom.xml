@@ -10,8 +10,9 @@
         <version>1.0.0</version>
     </parent>
 
+    <!-- 改造为可执行 JAR（内嵌 Tomcat），由 spring-boot-maven-plugin 打包 -->
     <artifactId>bom-web</artifactId>
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
     <name>bom-web</name>
 
     <dependencies>
@@ -20,26 +21,56 @@
             <artifactId>bom-service</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- Spring Boot Web（内嵌 Tomcat，javax.servlet 4.0） -->
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webmvc</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- MyBatis-Plus（含 SqlSessionFactory 自动配置，兼容现有 XML Mapper） -->
         <dependency>
-            <groupId>commons-fileupload</groupId>
-            <artifactId>commons-fileupload</artifactId>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter</artifactId>
         </dependency>
+
+        <!-- Druid 连接池 Starter（spring.datasource.druid.* 自动配置） -->
         <dependency>
-            <groupId>org.apache.poi</groupId>
-            <artifactId>poi-ooxml</artifactId>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid-spring-boot-starter</artifactId>
         </dependency>
+
+        <!-- SQL Server 2019 JDBC -->
         <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
         </dependency>
+
+        <!-- Servlet API（编译期 provided，运行时由内嵌 Tomcat 提供） -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <finalName>bom-drawing-system</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.bom.BomDrawingSystemApplication</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

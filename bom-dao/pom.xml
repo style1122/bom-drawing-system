@@ -19,25 +19,27 @@
             <artifactId>bom-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- MyBatis-Plus 注解与核心（BaseMapper / @TableName 等，编译期需要） -->
         <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis-spring</artifactId>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-annotation</artifactId>
         </dependency>
+
+        <!-- Spring JDBC（MyBatis-Plus 事务/数据源需要） -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
         </dependency>
+
+        <!-- SQL Server JDBC（驱动类在数据源配置中使用） -->
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>druid</artifactId>
         </dependency>
     </dependencies>
 </project>

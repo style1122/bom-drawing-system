@@ -1,11 +1,12 @@
 package com.bom.mapper;
 
 import com.bom.entity.Drawing;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-public interface DrawingMapper {
+public interface DrawingMapper extends BaseMapper<Drawing> {
 
     int insert(Drawing drawing);
 

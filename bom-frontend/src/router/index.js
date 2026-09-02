@@ -33,19 +33,19 @@ const routes = [
         component: () => import('@/views/dashboard/Dashboard.vue'),
         meta: { requiresAuth: true, roles: ['ADMIN', 'ENGINEER', 'PRODUCTION', 'PURCHASER'] }
       },
-      // 图纸管理 — 研发工程师、生产和管理员
+      // 图纸管理 — 所有角色可查看图纸列表和下载（上传/删除仅研发和管理员）
       {
         path: 'drawings',
         name: 'DrawingManage',
         component: () => import('@/views/drawing/DrawingManage.vue'),
-        meta: { requiresAuth: true, roles: ['ADMIN', 'ENGINEER', 'PRODUCTION'] }
+        meta: { requiresAuth: true, roles: ['ADMIN', 'ENGINEER', 'PRODUCTION', 'PURCHASER'] }
       },
-      // 图纸版本管理 — 研发工程师、生产和管理员
+      // 图纸版本管理 — 所有角色可查看和下载
       {
         path: 'drawings/:materialId/versions',
         name: 'DrawingVersions',
         component: () => import('@/views/drawing/DrawingVersions.vue'),
-        meta: { requiresAuth: true, roles: ['ADMIN', 'ENGINEER', 'PRODUCTION'] }
+        meta: { requiresAuth: true, roles: ['ADMIN', 'ENGINEER', 'PRODUCTION', 'PURCHASER'] }
       },
       // 采购订单管理 — 研发工程师、采购和管理员
       {

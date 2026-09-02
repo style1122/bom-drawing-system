@@ -1,21 +1,33 @@
 package com.bom.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 import java.util.List;
 
+@TableName("requisition")
 public class Requisition {
 
+    @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("requisition_no")
     private String requisitionNo;       // 单据编号
+    @TableField("requisition_date")
     private Date requisitionDate;       // 单据日期
     private String requester;           // 采购人员
     private String department;          // 部门
     private String remark;              // 备注
+    @TableField("erp_sync_time")
     private Date erpSyncTime;           // ERP同步时间
+    @TableField("created_at")
     private Date createdAt;
 
     // 非持久化字段
+    @TableField(exist = false)
     private Integer itemCount;          // 物料明细数量
+    @TableField(exist = false)
     private List<RequisitionItem> items; // 明细列表
 
     public Long getId() { return id; }

@@ -1,0 +1,21 @@
+<service>
+  <id>bom-drawing-system</id>
+  <name>BOM Drawing System</name>
+  <description>BOM 图纸管理系统后端服务 (Spring Boot + MyBatis-Plus + SQL Server 2019)</description>
+  <executable>java</executable>
+  <arguments>-Xms512m -Xmx1024m -jar "%BASE%\bom-drawing-system.jar"</arguments>
+  <workingdirectory>%BASE%</workingdirectory>
+  <logpath>%BASE%\logs</logpath>
+  <logmode>rotate</logmode>
+  <onfailure action="restart" delay="10 sec"/>
+  <resetfailure>1 hour</resetfailure>
+</service>
+<!--
+  使用说明：
+  1. 从 https://github.com/winsw/winsw/releases 下载 WinSW-x64.exe，
+     重命名为 bom-drawing-system.exe 与本文件放在同一目录（即 %BASE%）。
+  2. 将构建产物 bom-drawing-system.jar 也放在该目录。
+  3. WinSW 会继承 Windows“系统环境变量”中设置的
+     JDBC_PASSWORD / ERP_APPSECRET / JDBC_URL 等值（见部署文档）。
+  4. 执行 install-service.bat 注册服务，services.msc 中启动“BOM Drawing System”。
+-->

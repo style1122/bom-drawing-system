@@ -2,11 +2,12 @@ package com.bom.mapper;
 
 import com.bom.entity.Requisition;
 import com.bom.entity.RequisitionItem;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-public interface RequisitionMapper {
+public interface RequisitionMapper extends BaseMapper<Requisition> {
 
     List<Requisition> findAllPaged(@Param("offset") int offset, @Param("size") int size, @Param("purchaserName") String purchaserName);
 

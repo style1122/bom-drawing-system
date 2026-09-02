@@ -1,25 +1,45 @@
 package com.bom.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 
+@TableName("drawing")
 public class Drawing {
 
+    @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("drawing_code")
     private String drawingCode;
+    @TableField("drawing_name")
     private String drawingName;
+    @TableField("file_format")
     private String fileFormat;
+    @TableField("file_size")
     private Long fileSize;
+    @TableField("storage_path")
     private String storagePath;
+    @TableField("preview_path")
     private String previewPath;
+    @TableField("preview_status")
     private String previewStatus;
+    @TableField("latest_version")
     private String latestVersion;
+    @TableField("material_id")
     private Long materialId;
+    @TableField("created_by")
     private Long createdBy;
+    @TableField("created_at")
     private Date createdAt;
 
     // 关联字段（非持久化）
+    @TableField(exist = false)
     private String materialCode;
+    @TableField(exist = false)
     private String materialName;
+    @TableField(exist = false)
     private String materialSpec;
 
     public Long getId() { return id; }

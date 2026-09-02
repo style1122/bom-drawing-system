@@ -1,19 +1,31 @@
 package com.bom.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 
+@TableName("audit_log")
 public class AuditLog {
 
+    @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("user_id")
     private Long userId;
     private String operation;
+    @TableField("target_type")
     private String targetType;
+    @TableField("target_id")
     private Long targetId;
     private String detail;
+    @TableField("ip_address")
     private String ipAddress;
+    @TableField("created_at")
     private Date createdAt;
 
     // 非持久化字段，联表查询时填充
+    @TableField(exist = false)
     private String userName;
 
     public Long getId() { return id; }

@@ -1,19 +1,32 @@
 package com.bom.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.util.Date;
 
 /**
  * 图纸分享 Token 实体
  */
+@TableName("share_token")
 public class ShareToken {
+    @TableId(type = IdType.AUTO)
     private Long id;
     private String token;
+    @TableField("material_id")
     private Long materialId;
+    @TableField("created_by")
     private Long createdBy;
+    @TableField("expire_at")
     private Date expireAt;
+    @TableField("visit_count")
     private Integer visitCount;
+    @TableField("last_visit_at")
     private Date lastVisitAt;
+    @TableField("created_at")
     private Date createdAt;
+    @TableField("is_valid")
     private Integer isValid;
 
     public Long getId() { return id; }

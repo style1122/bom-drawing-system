@@ -11,8 +11,10 @@ export const useUserStore = defineStore('user', () => {
 
   // 仪表盘模块：所有角色可访问
   const canAccessDashboard = computed(() => !!role.value)
-  // 图纸管理模块：管理员、研发工程师和生产可访问
-  const canAccessDrawings = computed(() => ['ADMIN', 'ENGINEER', 'PRODUCTION'].includes(role.value))
+  // 图纸管理模块（查看图纸列表/下载）：所有角色可访问
+  const canAccessDrawings = computed(() => ['ADMIN', 'ENGINEER', 'PRODUCTION', 'PURCHASER'].includes(role.value))
+  // 图纸写操作（上传/删除图纸、管理物料、ERP同步、分享）：仅管理员和研发工程师
+  const canEditDrawings = computed(() => ['ADMIN', 'ENGINEER'].includes(role.value))
   // 采购订单管理模块：管理员、研发工程师和采购可访问
   const canAccessRequisitions = computed(() => ['ADMIN', 'ENGINEER', 'PURCHASER'].includes(role.value))
   // 默认首页路径（采购员跳转采购订单，其他跳转仪表盘）
@@ -52,6 +54,7 @@ export const useUserStore = defineStore('user', () => {
     role,
     canAccessDashboard,
     canAccessDrawings,
+    canEditDrawings,
     canAccessRequisitions,
     homePath,
     login,

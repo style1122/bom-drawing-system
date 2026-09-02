@@ -1,0 +1,98 @@
+# =============================================================================
+# BOM 图纸管理系统 —— Spring Boot 配置文件
+# 部署于 Windows Server 2019 + SQL Server 2019
+# 说明：密钥类配置一律使用 ${ENV_VAR} 占位，并保留本地开发默认值；
+#       生产环境必须通过环境变量覆盖（JDBC_PASSWORD / ERP_APPSECRET 等）。
+# =============================================================================
+
+server:
+  # 后端服务端口（nginx 反向代理 /api 到该端口）
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: bom-drawing-system
+
+  # ---- 文件上传（最大 500MB，与原有 CommonsMultipartResolver 配置一致）----
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  # ---- Jackson 日期序列化格式 ----
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+  # ---- Druid 数据源（SQL Server 2019）----
+  datasource:
+    druid:
+      driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      # 生产环境用环境变量 JDBC_URL 覆盖；本地默认连本机 SQL Server
+      url: ${JDBC_URL:jdbc:sqlserver://localhost:1433;databaseName=BOM_DB;encrypt=false;trustServerCertificate=true;sendStringParametersAsUnicode=true}
+      username: ${JDBC_USERNAME:sa}
+      password: ${JDBC_PASSWORD:Sync@2026}
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+
+# =============================================================================
+# MyBatis-Plus 配置
+# - mapperLocations：保留原有 XML Mapper（与 BaseMapper 共用，互不影响）
+# - jdbc-type-for-null=NULL：避免 mssql-jdbc 把 Types.OTHER 当 varbinary，
+#   导致 datetime2 列写入报错（关键，必须保留）
+# - map-underscore-to-camel-case：让 BaseMapper/QueryWrapper 自动映射下划线列
+# =============================================================================
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.bom.entity
+  configuration:
+    jdbc-type-for-null: NULL
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+  global-config:
+    db-config:
+      id-type: auto
+      table-prefix: ""
+
+# =============================================================================
+# 正航 T9 ERP ESB 对接配置（物料基础数据 Mat01）
+# 密钥 appsecret 通过环境变量 ERP_APPSECRET 覆盖
+# =============================================================================
+erp:
+  base-url: ${ERP_BASE_URL:http://10.1.1.15:860}
+  appid: ${ERP_APPID:chiesbeac90d2bcca79c04}
+  appsecret: ${ERP_APPSECRET:5EBABC79A0AD621B6CFCEA67C92C3064}
+  progid: Mat01
+  language: zh-CHS
+  time-format: millis6
+  connect-timeout: 10000
+  read-timeout: 120000
+  subscribe:
+    enabled: true
+    sscrid: MA01
+    init-timestamp: 2018-01-01 00:00:00
+    secret: ""
+    poll:
+      enabled: true
+      interval-ms: 300000
+
+# =============================================================================
+# 日志级别（具体 appender 见 logback-spring.xml）
+# =============================================================================
+logging:
+  level:
+    com.bom: INFO
+    com.bom.mapper: INFO

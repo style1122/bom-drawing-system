@@ -1,302 +1,212 @@
-# BOM 图纸管理系统 — 部署文档
+# BOM 图纸管理系统 —— Windows Server 2019 部署文档
 
-> 版本：v1.4.0
-> 适用环境：Windows / Linux 生产部署
+> 技术栈：Spring Boot 2.7.18（内嵌 Tomcat 9 / `javax.servlet`）+ MyBatis-Plus 3.5.7 + SQL Server 2019 + Druid
+> 前端：Vue 3 + Vite，构建为静态资源由 nginx 托管
+> 打包形态：**可执行 JAR**（单文件部署，无需外置 Tomcat）
 
 ---
 
-## 一、环境要求
+## 1. 架构与部署拓扑
 
-| 软件 | 版本 | 用途 |
+```
+[ 浏览器 ]  ──HTTP 80──▶  [ nginx for Windows ]
+                                │  /            └── 静态文件：Vue dist
+                                │  /api/**      └── 反向代理 ──▶ [ Spring Boot JAR :8080 ]
+                                                                      │
+                                                                      └──▶ [ SQL Server 2019 :1433 / BOM_DB ]
+```
+
+- 后端只提供 `/api/**` 接口；前端页面与静态资源由 nginx 直接返回。
+- 后端注册为 Windows 服务（WinSW），开机自启、崩溃自动重启。
+- 所有密钥（数据库密码、ERP 密钥）通过**环境变量**注入，不落明文。
+
+---
+
+## 2. 环境要求
+
+| 组件 | 版本 | 说明 |
 |------|------|------|
-| JDK | 1.8+ | Java 运行环境 |
-| Maven | 3.6+ | 后端项目构建 |
-| SQL Server | 2019+ | 业务数据库 |
-| Tomcat | 9+ | 应用服务器（war 包部署） |
-| Node.js | 18+ | 前端构建 |
-| pnpm | 最新版 | 前端依赖管理 |
+| Windows Server | 2019 | 64 位 |
+| JDK | 8uXXX 64-bit（或 11/17） | Spring Boot 2.7 支持 Java 8–19；需 `java` 在 PATH |
+| SQL Server | 2019 | 数据库引擎，混合验证模式 |
+| Maven | 3.6+ | 仅构建机需要 |
+| Node.js | 18+ | 仅构建前端需要（含 npm） |
+| nginx | for Windows 1.24+ | 托管前端 + 反向代理 |
+| WinSW | v2/v3 (x64) | 将 JAR 注册为 Windows 服务 |
+
+> 构建机与部署机可同一台，也可分开：只需把 `bom-drawing-system.jar` 与 `bom-frontend/dist` 拷贝到服务器。
 
 ---
 
-## 二、数据库初始化
+## 3. 数据库准备（SQL Server 2019）
 
-### 2.1 创建数据库
+### 3.1 安装与网络
+1. 安装 SQL Server 2019 数据库引擎，身份验证选**混合模式**，设置 `sa` 密码（该密码即后续的 `JDBC_PASSWORD`）。
+2. 打开 **SQL Server Configuration Manager** → *SQL Server Network Configuration* → *Protocols for MSSQLSERVER* → **TCP/IP** → 启用（Yes）。
+3. 同窗口 *TCP/IP* → *IP Addresses* → 拉到 **IPAll** → `TCP Port = 1433`（清空 TCP Dynamic Ports）。
+4. 重启 **SQL Server (MSSQLSERVER)** 服务使配置生效。
+5. **Windows 防火墙** → 高级设置 → 入站规则 → 新建规则 → 端口 → TCP 1433 → 允许。
 
-使用 SSMS 或 sqlcmd 连接到 SQL Server，执行以下脚本：
+### 3.2 建库与建表
+用 SSMS 或 `sqlcmd` 依次执行项目 `sql/` 目录下的脚本：
 
-```bash
-sqlcmd -S localhost -U sa -P 'your_password' -i sql/01_create_database.sql
+```sql
+-- 01_create_database.sql   建库 BOM_DB（建议排序规则 Chinese_PRC_CI_AS）
+-- 02_create_requisition.sql
+-- 03_erp_material.sql / 03_update_roles.sql / 04_erp_have_drawing.sql
+-- 05_erp_sync_cursor.sql
 ```
 
-脚本位置：`sql/01_create_database.sql`
-
-执行完成后，数据库 `BOM_DB` 及其所有表将被创建。
-
-### 2.2 数据库表说明
-
-| 表名 | 说明 |
-|------|------|
-| `sys_user` | 系统用户表，存储用户信息和登录凭据，默认包含管理员账号 admin/admin123 |
-| `material` | 物料主数据表，存储物料编码、名称、规格、单位等基础信息 |
-| `drawing` | 图纸文件表，存储上传的图纸文件元信息（文件名、路径、类型、关联物料等） |
-| `audit_log` | 操作日志表，记录用户的关键操作（登录、增删改等），用于审计追溯 |
-| `share_token` | 分享令牌表，用于生成和管理图纸/文档的外部分享链接，支持过期时间控制 |
+> 若使用专用应用账号（而非 `sa`），请在 BOM_DB 中创建登录名并映射为 db_owner（或最小必需权限）。
 
 ---
 
-## 三、修改配置
+## 4. 构建
 
-### 3.1 数据库连接
+在**构建机**上（仓库根目录）：
 
-编辑 `bom-web/src/main/resources/jdbc.properties`：
-
-```properties
-jdbc.driver=com.microsoft.sqlserver.jdbc.SQLServerDriver
-jdbc.url=jdbc:sqlserver://localhost:1433;databaseName=BOM_DB;encrypt=false;trustServerCertificate=true
-jdbc.username=sa
-jdbc.password=your_password_here
+```bat
+build.bat
 ```
 
-| 参数 | 说明 |
-|------|------|
-| `jdbc.url` | 数据库连接 URL，修改 IP、端口、数据库名以匹配实际环境 |
-| `jdbc.username` | 数据库用户名 |
-| `jdbc.password` | 数据库密码 |
+或手动：
 
-### 3.2 文件上传目录
-
-编辑 `bom-service/src/main/java/com/bom/service/DrawingService.java`，修改 `BASE_STORAGE_PATH` 常量：
-
-```java
-// 根据实际服务器环境修改此路径
-private static final String BASE_STORAGE_PATH = "/data/bom-uploads/";
-```
-
-> 确保该目录存在且 Tomcat 进程有读写权限。
-
-### 3.3 前端开发代理
-
-编辑 `bom-frontend/vite.config.js`，修改代理目标地址：
-
-```js
-export default defineConfig({
-  server: {
-    port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',  // 修改为后端实际地址
-        changeOrigin: true
-      }
-    }
-  }
-})
-```
-
-### 3.4 正航 T9 ERP 物料同步配置（可选）
-
-如需从正航 T9 ERP 同步物料基础数据，编辑 `bom-web/src/main/resources/erp.properties`：
-
-```properties
-erp.base-url=http://10.1.1.15:860
-erp.appid=chiesbeac90d2bcca79c04
-erp.appsecret=5EBABC79A0AD621B6CFCEA67C92C3064
-```
-
-存量数据库需先执行 `sql/03_erp_material.sql` 补充物料同步字段。部署完成后，系统默认每 1 分钟自动增量拉取 ERP 新增物料（可在 `erp.properties` 中调整 `erp.sync.poll.enabled` / `erp.sync.poll.interval-ms`），图纸管理页的“ERP物料同步”按钮仍可手动全量同步。详细说明见 `docs/erp-integration.md`。
-
----
-
-## 四、项目构建
-
-### 4.1 前端构建
-
-```bash
-cd bom-frontend
-pnpm install
-pnpm run build
-```
-
-构建产物输出到 `bom-frontend/dist/` 目录。
-
-### 4.2 后端构建
-
-```bash
-# 在项目根目录执行
+```bat
 mvn clean package -DskipTests
+cd bom-frontend && npm install && npm run build
 ```
 
-构建成功后，war 包位于：`bom-web/target/bom-web-1.0.0.war`
+产物：
+- 后端：`bom-web\target\bom-drawing-system.jar`（finalName=`bom-drawing-system`）
+- 前端：`bom-frontend\dist\`
+
+> ⚠️ 本环境未能联网执行 `mvn` 验证编译，请在构建机上执行 `mvn clean package` 确认通过后，
+> 再将 jar 部署到服务器。如编译报错，按错误修正后重新打包（迁移已尽量保持与现有代码兼容）。
 
 ---
 
-## 五、部署
+## 5. 配置密钥（环境变量）
 
-### 5.1 Tomcat 部署
+`application.yml` 中数据库与 ERP 密钥均使用 `${ENV_VAR}` 占位，并保留**本地开发默认值**。
+**生产服务器必须通过环境变量覆盖敏感项**（尤其是 `JDBC_PASSWORD`、`ERP_APPSECRET`）。
 
-1. 将 `bom-web/target/bom-web-1.0.0.war` 复制到 Tomcat 的 `webapps/` 目录
-2. 建议重命名为 `bom.war`（访问路径为 `/bom`）
-3. 启动 Tomcat：
+在服务器上设置 **系统环境变量**（控制面板 → 系统 → 高级 → 环境变量 → 系统变量）：
 
-```bash
-# Linux / macOS
-$TOMCAT_HOME/bin/startup.sh
+| 变量名 | 说明 | 默认值（开发） |
+|--------|------|----------------|
+| `JDBC_URL` | SQL Server 连接串 | `jdbc:sqlserver://localhost:1433;databaseName=BOM_DB;encrypt=false;trustServerCertificate=true;sendStringParametersAsUnicode=true` |
+| `JDBC_USERNAME` | 数据库账号 | `sa` |
+| `JDBC_PASSWORD` | 数据库密码 | `Sync@2026`（**生产务必修改**） |
+| `SERVER_PORT` | 后端监听端口 | `8080` |
+| `ERP_BASE_URL` | 正航 ESB 地址 | `http://10.1.1.15:860` |
+| `ERP_APPID` | ERP 应用 ID | 见 application.yml |
+| `ERP_APPSECRET` | ERP 密钥 | 见 application.yml（**生产务必修改**） |
 
-# Windows
-%TOMCAT_HOME%\bin\startup.bat
-```
-
-4. 访问 `http://localhost:8080/bom/` 验证部署成功
-
-### 5.2 默认管理员
-
-| 账号 | 密码 |
-|------|------|
-| `admin` | `admin123` |
-
-> 首次登录后请立即修改默认密码。
+> WinSW 启动的 Java 进程会**继承系统环境变量**，因此配置在系统变量中即可被服务读取。
 
 ---
 
-## 六、Nginx 生产环境部署（推荐）
+## 6. 部署后端（JAR + WinSW 服务）
 
-将前端静态文件与后端 API 通过 Nginx 统一代理，避免跨域问题。
+1. 在服务器建目录 `C:\apps\bom-drawing-system\`。
+2. 拷贝：
+   - `bom-drawing-system.jar`
+   - `deploy\windows\bom-drawing-system.xml`
+   - 从 https://github.com/winsw/winsw/releases 下载 `WinSW-x64.exe`，重命名为 **`bom-drawing-system.exe`**，与本目录其余文件同级。
+3. 以**管理员**身份运行：
+   ```bat
+   cd C:\apps\bom-drawing-system
+   install-service.bat
+   ```
+4. 启动服务（可在 `services.msc` 中找到 “BOM Drawing System”，或命令）：
+   ```bat
+   bom-drawing-system.exe start
+   ```
+5. 验证：
+   - 日志：`C:\apps\bom-drawing-system\logs\bom-system.log`（应用日志）与 `bom-drawing-system.out.log`（WinSW 捕获的控制台）。
+   - 接口探活：`curl http://localhost:8080/api/...`（注意登录类接口已放行）。
 
-### 6.1 Nginx 配置示例
-
-```nginx
-server {
-    listen       80;
-    server_name  your-domain.com;
-
-    # 前端静态文件（SPA 路由回退）
-    location /bom {
-        alias   /opt/bom-drawing-system/bom-frontend/dist;
-        index   index.html;
-        try_files $uri $uri/ /bom/index.html;
-    }
-
-    # API 代理到 Tomcat
-    location /bom/api/ {
-        proxy_pass http://127.0.0.1:8080/bom/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
-        # 文件上传大小限制
-        client_max_body_size 100m;
-    }
-
-    # 静态资源缓存
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf)$ {
-        alias   /opt/bom-drawing-system/bom-frontend/dist;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
-}
-```
-
-### 6.2 配置要点说明
-
-| 配置项 | 作用 |
-|------|------|
-| `try_files $uri $uri/ /bom/index.html` | SPA 路由回退，解决 Vue Router history 模式下刷新 404 问题 |
-| `client_max_body_size 100m` | 允许上传较大的图纸文件 |
-| 静态资源缓存规则 | 对 JS/CSS/图片等设置 30 天强缓存，优化加载速度 |
-
----
-
-## 七、前端独立开发
-
-当后端已部署运行时，前端可独立启动开发服务器进行调试：
-
-```bash
-cd bom-frontend
-pnpm install
-pnpm run dev
-```
-
-访问 `http://localhost:3000`，API 请求将自动代理到 `vite.config.js` 中配置的后端地址。
-
----
-
-## 八、项目结构
-
-```
-bom-drawing-system/
-├── pom.xml                          # Maven 父 POM（多模块管理）
-├── sql/
-│   └── 01_create_database.sql       # 数据库初始化脚本
-├── bom-common/                      # 公共模块（工具类、常量、异常定义）
-├── bom-dao/                         # 数据访问层（实体类、MyBatis Mapper）
-├── bom-service/                     # 业务逻辑层（Service 接口与实现）
-├── bom-web/                         # Web 层（Spring MVC Controller、配置）
-│   └── src/main/resources/
-│       ├── jdbc.properties          # 数据库连接配置
-│       └── spring/                  # Spring 配置文件
-└── bom-frontend/                    # 前端项目（Vue 3 + Element Plus + Vite）
-    ├── vite.config.js               # Vite 构建与代理配置
-    └── src/
-        ├── api/                     # API 请求封装
-        ├── views/                   # 页面组件
-        ├── components/              # 公共组件
-        ├── router/                  # Vue Router 路由配置
-        └── store/                   # Pinia 状态管理
+常用命令：
+```bat
+bom-drawing-system.exe stop      # 停止
+bom-drawing-system.exe restart   # 重启
+uninstall-service.bat            # 卸载服务
 ```
 
 ---
 
-## 九、系统账号
+## 7. 部署前端（nginx）
 
-| 角色 | 默认账号 | 密码 | 说明 |
-|------|---------|------|------|
-| 管理员 | `admin` | `admin123` | 系统内置，可管理用户和系统设置 |
-| 普通用户 | 注册创建 | 自设 | 通过注册页面创建，由管理员审核 |
+1. 建目录 `C:\apps\bom-drawing-system\frontend\`，将 `bom-frontend\dist\` 整个拷贝到 `...\frontend\dist`。
+2. 安装 **nginx for Windows**，将 `deploy\nginx\bom-drawing-system.conf` 复制到 `nginx\conf\`。
+3. 在 `nginx\conf\nginx.conf` 的 `http { ... }` 内添加：
+   ```nginx
+   include bom-drawing-system.conf;
+   ```
+4. 以管理员身份启动 nginx：
+   ```bat
+   cd C:\apps\nginx
+   start nginx.exe
+   ```
+5. 验证：浏览器访问 `http://<服务器IP>/`，应能打开登录页；接口请求走 `/api/**` 被代理到后端。
 
-> 认证方式：Token 认证，Token 存储在服务端内存（ConcurrentHashMap）中，服务重启后需重新登录。
+> 若 80 端口被 IIS 占用，可改 `listen 80;` 为其他端口（如 8081），或停用 IIS 的默认站点。
 
 ---
 
-## 十、常见问题
+## 8. 建议目录结构
 
-### Q1：Tomcat 启动报错 "找不到 SQLServerDriver"
-
-**原因**：Maven 依赖未正确打包到 war 中。
-
-**解决**：确认 `mssql-jdbc` 在 `bom-web/target/bom-web-1.0.0/WEB-INF/lib/` 下存在。如缺失，手动将 `mssql-jdbc` jar 复制到 Tomcat 的 `lib/` 目录。
-
-### Q2：前端页面空白，刷新后 404
-
-**原因**：Vue Router history 模式下服务端未正确配置路由回退。
-
-**解决**：Nginx 配置中确保有 `try_files $uri $uri/ /bom/index.html;`。如直接部署在 Tomcat 中，需配置 URL 重写。
-
-### Q3：文件上传失败
-
-**原因**：`DrawingService.java` 中配置的 `BASE_STORAGE_PATH` 目录不存在或无写入权限。
-
-**解决**：创建对应目录并确保 Tomcat 进程有读写权限：
-
-```bash
-mkdir -p /data/bom-uploads
-chmod 755 /data/bom-uploads
+```
+C:\apps\
+├── bom-drawing-system\
+│   ├── bom-drawing-system.jar
+│   ├── bom-drawing-system.exe        (WinSW)
+│   ├── bom-drawing-system.xml        (WinSW 配置)
+│   ├── logs\                          (应用/服务日志)
+│   └── frontend\
+│       └── dist\                      (Vue 构建产物)
+└── nginx\
+    └── conf\
+        ├── nginx.conf
+        └── bom-drawing-system.conf
 ```
 
-### Q4：SQL Server 连接失败
+---
 
-**检查清单**：
+## 9. 运维与故障排查
 
-1. SQL Server 服务是否启动
-2. TCP/IP 协议是否启用（SQL Server Configuration Manager）
-3. 端口 1433 是否被防火墙阻止
-4. SQL Server 是否启用混合模式认证（SQL Server 和 Windows 身份验证模式）
+### 日志
+- 应用日志：`C:\apps\bom-drawing-system\logs\bom-system.log`（按天滚动，保留 30 天）。
+- 服务控制台：`bom-drawing-system.out.log` / `bom-drawing-system.err.log`（WinSW 生成）。
+- nginx 日志：`nginx\logs\access.log` / `error.log`。
 
-### Q5：登录后接口返回 401
+### 端口冲突
+- 若 8080 被占用：设置系统环境变量 `SERVER_PORT=8090`（或改 `application.yml` 的 `server.port`），并同步修改 nginx `proxy_pass` 的端口。
+- nginx 80 被占用：见第 7 步。
 
-**原因**：Token 存储在服务端内存中，Tomcat 重启后 Token 全部失效。
+### 常见错误
+| 现象 | 原因 / 处理 |
+|------|--------------|
+| 启动报 `datetime2` / `无效的列类型` | 必须保留 `mybatis-plus.configuration.jdbc-type-for-null: NULL`（已在 application.yml 配置），确保未误删。 |
+| 连接 SQL Server 报 TLS / 加密错误 | 开发用 `encrypt=false;trustServerCertificate=true`；生产启用 TLS 时改 `encrypt=true` 并配置证书/信任。 |
+| API 返回 401 | 未携带/已失效 token；登录、注册、公开分享、下载、ERP 订阅接口已放行。 |
+| API 返回 403 | 写操作需 `ADMIN`/`ENGINEER` 角色（见 RoleInterceptor 映射）。 |
+| 服务启动即退出 | 查 `bom-drawing-system.out.log`：多为 `java` 未在 PATH、或 `JDBC_PASSWORD` 等系统环境变量未设置。 |
+| 前端页面白屏/刷新 404 | 确认 nginx `location /` 有 `try_files $uri $uri/ /index.html;`（SPA 路由兜底）。 |
 
-**解决**：重新登录即可获取新 Token。
+### 升级流程
+1. 构建机重新 `build.bat` 生成新 jar / dist。
+2. 停止服务：`bom-drawing-system.exe stop`。
+3. 替换 `bom-drawing-system.jar` 与 `frontend\dist`。
+4. 启动服务：`bom-drawing-system.exe start`；如改了 nginx 配置需 `nginx -s reload`。
 
 ---
 
-> 如有问题，请查看 Tomcat 日志 `$TOMCAT_HOME/logs/catalina.out` 和浏览器开发者工具控制台。
+## 10. 迁移说明（本次改造要点）
+
+- 由 **Spring MVC + MyBatis（WAR）** 改造为 **Spring Boot 2.7 + MyBatis-Plus（可执行 JAR）**。
+- 移除 `web.xml`、`spring/spring-context.xml`、`spring/spring-mvc.xml`、`jdbc.properties`、`erp.properties`、`DruidConfig.java`；
+  数据源/MyBatis-Plus/拦截器/上传限制/日志 全部改为 `application.yml` + Java 配置（`BomDrawingSystemApplication`、`WebMvcConfig`、`MybatisPlusConfig`）。
+- 8 个实体加 `@TableName/@TableId/@TableField` 注解；7 个 Mapper 接口继承 `BaseMapper<T>`（原有 XML Mapper 语句保留，与 BaseMapper 共用）。
+- 兼容 XML Mapper 中的物理分页/联表 SQL；MyBatis-Plus 分页拦截器为 `BaseMapper`/`QueryWrapper` 分页提供支撑。
+- 密钥一律 `${ENV_VAR}` 占位，生产通过系统环境变量注入。

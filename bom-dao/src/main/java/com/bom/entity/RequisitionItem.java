@@ -1,25 +1,40 @@
 package com.bom.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import java.math.BigDecimal;
 import java.util.Date;
 
+@TableName("requisition_item")
 public class RequisitionItem {
 
+    @TableId(type = IdType.AUTO)
     private Long id;
+    @TableField("requisition_id")
     private Long requisitionId;
+    @TableField("material_code")
     private String materialCode;        // 物料编码
+    @TableField("material_name")
     private String materialName;        // 物料名称
     private String specification;       // 规格型号
     private BigDecimal quantity;        // 采购数量
     private String unit;                // 单位
     private String remark;              // 备注
+    @TableField("created_at")
     private Date createdAt;
 
     // 非持久化字段：关联图纸信息
+    @TableField(exist = false)
     private Long materialId;            // 关联物料ID
+    @TableField(exist = false)
     private Boolean hasDrawing;         // 是否有图纸
+    @TableField(exist = false)
     private Long drawingId;             // 最新PDF图纸ID
+    @TableField(exist = false)
     private String drawingName;         // 图纸文件名
+    @TableField(exist = false)
     private Integer drawingCount;       // 图纸总数
 
     public Long getId() { return id; }

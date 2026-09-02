@@ -1,11 +1,12 @@
 package com.bom.mapper;
 
 import com.bom.entity.Material;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
-public interface MaterialMapper {
+public interface MaterialMapper extends BaseMapper<Material> {
 
     int insert(Material material);
 
