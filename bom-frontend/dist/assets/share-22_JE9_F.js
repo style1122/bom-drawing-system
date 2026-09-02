@@ -1,0 +1,1 @@
+import{I as t}from"./index-BUOObtjA.js";function s(r){return t.post("/share/create",r)}function i(r){return fetch(`/api/share/public/${r}/data`).then(a=>{if(!a.ok)throw new Error("分享链接无效或已过期");return a.json()})}function u(r,a,e=!1){return`/api/share/public/${r}/download/${a}${e?"?inline=true":""}`}export{u as a,s as c,i as g};

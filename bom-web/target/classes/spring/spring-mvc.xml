@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/mvc
+       http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <!-- 扫描 Controller 包、拦截器包和异常处理包 -->
+    <context:component-scan base-package="com.bom.controller"/>
+    <context:component-scan base-package="com.bom.interceptor"/>
+    <context:component-scan base-package="com.bom.exception"/>
+
+    <!-- 启用 MVC 注解驱动 -->
+    <mvc:annotation-driven>
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json;charset=UTF-8</value>
+                    </list>
+                </property>
+                <property name="objectMapper">
+                    <bean class="com.fasterxml.jackson.databind.ObjectMapper">
+                        <property name="dateFormat">
+                            <bean class="java.text.SimpleDateFormat">
+                                <constructor-arg value="yyyy-MM-dd HH:mm:ss"/>
+                            </bean>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+    <!-- 文件上传解析器，最大 500MB -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="maxUploadSize" value="524288000"/>
+        <property name="defaultEncoding" value="UTF-8"/>
+    </bean>
+
+    <!-- 拦截器 -->
+    <mvc:interceptors>
+        <!-- 1. 登录认证拦截器（所有 /api/** 接口） -->
+        <mvc:interceptor>
+            <mvc:mapping path="/api/**"/>
+            <bean class="com.bom.interceptor.LoginInterceptor"/>
+        </mvc:interceptor>
+        <!-- 2. 角色权限拦截器：图纸管理模块仅研发工程师(ENGINEER)、生产(PRODUCTION)和管理员(ADMIN)可访问 -->
+        <mvc:interceptor>
+            <mvc:mapping path="/api/material/**"/>
+            <mvc:mapping path="/api/drawing/upload"/>
+            <mvc:mapping path="/api/drawing/preview/**"/>
+            <mvc:mapping path="/api/drawing/material/**"/>
+            <mvc:mapping path="/api/drawing/node/**"/>
+            <mvc:mapping path="/api/drawing/search"/>
+            <mvc:mapping path="/api/share/**"/>
+            <ref bean="roleInterceptor"/>
+        </mvc:interceptor>
+        <!-- 3. 管理员权限拦截器 -->
+        <mvc:interceptor>
+            <mvc:mapping path="/api/user/approve/**"/>
+            <mvc:mapping path="/api/user/reject/**"/>
+            <mvc:mapping path="/api/user/list"/>
+            <mvc:mapping path="/api/user/disable/**"/>
+            <mvc:mapping path="/api/user/reset-password/**"/>
+            <mvc:mapping path="/api/user/pending"/>
+            <ref bean="adminInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
+
+</beans>

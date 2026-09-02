@@ -1,0 +1,15 @@
+com\bom\service\RequisitionService.class
+com\bom\erp\ErpSubscriptionService.class
+com\bom\erp\ErpGetListResult.class
+com\bom\erp\ErpMaterial.class
+com\bom\service\AuditLogService.class
+com\bom\erp\ErpMaterialSyncService.class
+com\bom\erp\ErpSyncResult.class
+com\bom\service\DrawingService.class
+com\bom\erp\ErpApiClient.class
+com\bom\erp\ErpSscrDetail.class
+com\bom\service\UserService.class
+com\bom\service\MaterialService.class
+com\bom\service\ShareService.class
+com\bom\erp\ErpSscrQueryResult.class
+com\bom\erp\ErpApiClient$TokenResult.class

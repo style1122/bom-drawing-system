@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bom.mapper.ErpSyncCursorMapper">
+
+    <resultMap id="cursorMap" type="com.bom.entity.ErpSyncCursor">
+        <id property="cursorKey" column="cursor_key"/>
+        <result property="cursorValue" column="cursor_value"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <select id="findByKey" resultMap="cursorMap">
+        SELECT * FROM erp_sync_cursor WHERE cursor_key = #{cursorKey}
+    </select>
+
+    <update id="upsert">
+        UPDATE erp_sync_cursor SET cursor_value = #{cursorValue}, updated_at = GETDATE()
+        WHERE cursor_key = #{cursorKey}
+        IF @@ROWCOUNT = 0
+            INSERT INTO erp_sync_cursor (cursor_key, cursor_value, updated_at)
+            VALUES (#{cursorKey}, #{cursorValue}, GETDATE())
+    </update>
+
+</mapper>

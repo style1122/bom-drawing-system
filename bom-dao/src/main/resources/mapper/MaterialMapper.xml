@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bom.mapper.MaterialMapper">
+
+    <resultMap id="materialMap" type="com.bom.entity.Material">
+        <id property="id" column="id"/>
+        <result property="materialCode" column="material_code"/>
+        <result property="materialName" column="material_name"/>
+        <result property="specification" column="specification"/>
+        <result property="drawingNo" column="drawing_no"/>
+        <result property="materialType" column="material_type"/>
+        <result property="unit" column="unit"/>
+        <result property="materialCategory" column="material_category"/>
+        <result property="validityFromDate" column="validity_from_date"/>
+        <result property="validityToDate" column="validity_to_date"/>
+        <result property="erpHaveDrawing" column="erp_have_drawing"/>
+        <result property="weight" column="weight"/>
+        <result property="materialAttr" column="material_attr"/>
+        <result property="source" column="source"/>
+        <result property="erpSyncTime" column="erp_sync_time"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 带图纸统计的 resultMap -->
+    <resultMap id="materialWithDrawingMap" type="com.bom.entity.Material" extends="materialMap">
+        <result property="hasDrawing" column="has_drawing"/>
+        <result property="has3d" column="has_3d"/>
+        <result property="hasEngineering" column="has_engineering"/>
+        <result property="drawingAddDate" column="drawing_add_date"/>
+        <result property="drawingUpdateDate" column="drawing_update_date"/>
+        <result property="drawingCount" column="drawing_count"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.bom.entity.Material" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO material (material_code, material_name, specification, drawing_no, material_type, unit,
+                              material_category, validity_from_date, validity_to_date,
+                              source, erp_sync_time, created_by, created_at, updated_at)
+        VALUES (CONVERT(NVARCHAR(64),#{materialCode}),
+                CONVERT(NVARCHAR(256),#{materialName}),
+                CONVERT(NVARCHAR(512),#{specification}),
+                CONVERT(NVARCHAR(128),#{drawingNo}),
+                ISNULL(NULLIF(CONVERT(NVARCHAR(32),#{materialType}), N''), N'零件'),
+                ISNULL(NULLIF(CONVERT(NVARCHAR(16),#{unit}), N''), N'个'),
+                CONVERT(NVARCHAR(32),#{materialCategory}),
+                CONVERT(DATE, NULLIF(#{validityFromDate}, ''), 23),
+                CONVERT(DATE, NULLIF(#{validityToDate}, ''), 23),
+                ISNULL(CONVERT(NVARCHAR(32),#{source}), N'MANUAL'),
+                #{erpSyncTime,jdbcType=TIMESTAMP},
+                #{createdBy},
+                GETDATE(), GETDATE())
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO material (material_code, material_name, specification, drawing_no, material_type, unit,
+                              material_category, validity_from_date, validity_to_date,
+                              source, erp_sync_time, created_by, created_at, updated_at)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (CONVERT(NVARCHAR(64),#{item.materialCode}),
+             CONVERT(NVARCHAR(256),#{item.materialName}),
+             CONVERT(NVARCHAR(512),#{item.specification}),
+             CONVERT(NVARCHAR(128),#{item.drawingNo}),
+             ISNULL(NULLIF(CONVERT(NVARCHAR(32),#{item.materialType}), N''), N'零件'),
+             ISNULL(NULLIF(CONVERT(NVARCHAR(16),#{item.unit}), N''), N'个'),
+             CONVERT(NVARCHAR(32),#{item.materialCategory}),
+             CONVERT(DATE, NULLIF(#{item.validityFromDate}, ''), 23),
+             CONVERT(DATE, NULLIF(#{item.validityToDate}, ''), 23),
+             ISNULL(CONVERT(NVARCHAR(32),#{item.source}), N'MANUAL'),
+             #{item.erpSyncTime,jdbcType=TIMESTAMP},
+             #{item.createdBy},
+             GETDATE(), GETDATE())
+        </foreach>
+    </insert>
+
+    <!-- ERP 同步更新：按物料编码更新基础字段，保留已有数据中 ERP 为空的部分 -->
+    <update id="updateErpFields" parameterType="com.bom.entity.Material">
+        UPDATE material SET
+            material_name = COALESCE(NULLIF(CONVERT(NVARCHAR(256), #{materialName}), N''), material_name),
+            specification = COALESCE(NULLIF(CONVERT(NVARCHAR(512), #{specification}), N''), specification),
+            material_type = COALESCE(NULLIF(CONVERT(NVARCHAR(32), #{materialType}), N''), material_type),
+            unit = COALESCE(NULLIF(LEFT(CONVERT(NVARCHAR(16), #{unit}), 16), N''), unit),
+            material_category = COALESCE(NULLIF(CONVERT(NVARCHAR(32), #{materialCategory}), N''), material_category),
+            validity_from_date = CONVERT(DATE, NULLIF(#{validityFromDate}, ''), 23),
+            validity_to_date = CONVERT(DATE, NULLIF(#{validityToDate}, ''), 23),
+            source = N'ERP',
+            erp_sync_time = GETDATE(),
+            updated_at = GETDATE()
+        WHERE material_code = #{materialCode}
+    </update>
+
+    <!-- ERP 图纸标记同步：按物料编码更新本地记录，便于界面展示同步状态 -->
+    <update id="updateErpHaveDrawing">
+        UPDATE material SET
+            erp_have_drawing = #{flag},
+            erp_sync_time = GETDATE(),
+            updated_at = GETDATE()
+        WHERE material_code = #{code}
+    </update>
+
+    <select id="findByCode" resultMap="materialMap">
+        SELECT * FROM material WHERE material_code = #{code}
+    </select>
+
+    <!-- 公共 JOIN 片段：物料 + 图纸统计 -->
+    <!-- has_drawing: 是否有PDF图纸 / has_3d: 是否有三维(.SLDPRT/.SLDASM) / has_engineering: 是否有工程图(.SLDDRW) -->
+    <sql id="materialWithDrawingJoins">
+        SELECT m.*,
+               CASE WHEN dpdf.pdf_count > 0 THEN 1 ELSE 0 END AS has_drawing,
+               CASE WHEN d3d.d3d_count > 0 THEN 1 ELSE 0 END AS has_3d,
+               CASE WHEN deng.deng_count > 0 THEN 1 ELSE 0 END AS has_engineering,
+               d.min_created_at AS drawing_add_date,
+               d.max_created_at AS drawing_update_date,
+               ISNULL(d.drawing_count, 0) AS drawing_count
+        FROM material m
+        LEFT JOIN (
+            SELECT material_id, COUNT(*) AS drawing_count,
+                   MIN(created_at) AS min_created_at,
+                   MAX(created_at) AS max_created_at
+            FROM drawing
+            GROUP BY material_id
+        ) d ON m.id = d.material_id
+        LEFT JOIN (
+            SELECT material_id, COUNT(*) AS pdf_count
+            FROM drawing
+            WHERE LOWER(file_format) = 'pdf'
+            GROUP BY material_id
+        ) dpdf ON m.id = dpdf.material_id
+        LEFT JOIN (
+            SELECT material_id, COUNT(*) AS d3d_count
+            FROM drawing
+            WHERE LOWER(file_format) IN ('sldprt', 'sldasm')
+            GROUP BY material_id
+        ) d3d ON m.id = d3d.material_id
+        LEFT JOIN (
+            SELECT material_id, COUNT(*) AS deng_count
+            FROM drawing
+            WHERE LOWER(file_format) = 'slddrw'
+            GROUP BY material_id
+        ) deng ON m.id = deng.material_id
+    </sql>
+
+    <!-- 公共搜索 WHERE 片段 -->
+    <sql id="searchCondition">
+        WHERE m.material_code LIKE '%' + #{keyword} + '%'
+           OR m.material_name LIKE '%' + #{keyword} + '%'
+           OR m.specification LIKE '%' + #{keyword} + '%'
+    </sql>
+
+    <select id="search" resultMap="materialWithDrawingMap">
+        <include refid="materialWithDrawingJoins"/>
+        <include refid="searchCondition"/>
+        ORDER BY m.id DESC
+    </select>
+
+    <select id="findAll" resultMap="materialWithDrawingMap">
+        <include refid="materialWithDrawingJoins"/>
+        ORDER BY m.id DESC
+    </select>
+
+    <!-- ===== 分页查询 ===== -->
+
+    <select id="findAllPaged" resultMap="materialWithDrawingMap">
+        <include refid="materialWithDrawingJoins"/>
+        ORDER BY m.id DESC
+        OFFSET #{offset} ROWS
+        FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM material
+    </select>
+
+    <select id="searchPaged" resultMap="materialWithDrawingMap">
+        <include refid="materialWithDrawingJoins"/>
+        <include refid="searchCondition"/>
+        ORDER BY m.id DESC
+        OFFSET #{offset} ROWS
+        FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="countSearch" resultType="long">
+        SELECT COUNT(*) FROM material m
+        <include refid="searchCondition"/>
+    </select>
+
+    <select id="findById" resultMap="materialMap">
+        SELECT * FROM material WHERE id = #{id}
+    </select>
+
+    <!-- 按图号查询：匹配 drawing_no 或 specification 字段 -->
+    <select id="findByDrawingNo" resultMap="materialMap">
+        SELECT TOP 1 * FROM material
+        WHERE drawing_no = #{drawingNo}
+           OR specification = #{drawingNo}
+        ORDER BY id DESC
+    </select>
+
+    <update id="update" parameterType="com.bom.entity.Material">
+        UPDATE material
+        <set>
+            <if test="materialCode != null">material_code = #{materialCode},</if>
+            <if test="materialName != null">material_name = #{materialName},</if>
+            <if test="specification != null">specification = #{specification},</if>
+            <if test="drawingNo != null">drawing_no = #{drawingNo},</if>
+            <if test="materialType != null">material_type = #{materialType},</if>
+            <if test="unit != null">unit = #{unit},</if>
+            <if test="weight != null">weight = #{weight},</if>
+            <if test="materialAttr != null">material_attr = #{materialAttr},</if>
+            <if test="source != null">source = #{source},</if>
+            <if test="erpSyncTime != null">erp_sync_time = #{erpSyncTime},</if>
+            updated_at = GETDATE()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM material WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByCode">
+        DELETE FROM material WHERE material_code = #{code}
+    </delete>
+
+</mapper>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bom.mapper.DrawingMapper">
+
+    <resultMap id="drawingMap" type="com.bom.entity.Drawing">
+        <id property="id" column="id"/>
+        <result property="drawingCode" column="drawing_code"/>
+        <result property="drawingName" column="drawing_name"/>
+        <result property="fileFormat" column="file_format"/>
+        <result property="fileSize" column="file_size"/>
+        <result property="storagePath" column="storage_path"/>
+        <result property="materialId" column="material_id"/>
+        <result property="previewPath" column="preview_path"/>
+        <result property="previewStatus" column="preview_status"/>
+        <result property="latestVersion" column="latest_version"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.bom.entity.Drawing" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO drawing (drawing_code, drawing_name, file_format, file_size, storage_path,
+                             preview_path, preview_status, latest_version, material_id, created_by, created_at)
+        VALUES (CONVERT(NVARCHAR(64),#{drawingCode}),
+                CONVERT(NVARCHAR(256),#{drawingName}),
+                CONVERT(NVARCHAR(16),#{fileFormat}),
+                #{fileSize},
+                CONVERT(NVARCHAR(512),#{storagePath}),
+                CONVERT(NVARCHAR(512),#{previewPath}),
+                CONVERT(NVARCHAR(16),#{previewStatus}),
+                CONVERT(NVARCHAR(32),#{latestVersion}),
+                #{materialId},
+                #{createdBy},
+                GETDATE())
+    </insert>
+
+    <select id="findById" resultMap="drawingMap">
+        SELECT * FROM drawing WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" resultMap="drawingMap">
+        SELECT * FROM drawing WHERE drawing_code = #{code}
+    </select>
+
+    <select id="search" resultMap="drawingMap">
+        SELECT * FROM drawing
+        WHERE drawing_code LIKE '%' + #{keyword} + '%'
+           OR drawing_name LIKE '%' + #{keyword} + '%'
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findByBomNodeId" resultMap="drawingMap">
+        SELECT * FROM drawing WHERE 1 = 0
+    </select>
+
+    <select id="findByMaterialId" resultMap="drawingMap">
+        SELECT * FROM drawing
+        WHERE material_id = #{materialId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="countByMaterialId" resultType="int">
+        SELECT COUNT(*) FROM drawing WHERE material_id = #{materialId}
+    </select>
+
+    <delete id="deleteByMaterialId">
+        DELETE FROM drawing WHERE material_id = #{materialId}
+    </delete>
+
+    <update id="updatePreviewStatus">
+        UPDATE drawing
+        SET preview_status = #{previewStatus},
+            preview_path = #{previewPath}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findAll" resultMap="drawingMap">
+        SELECT * FROM drawing ORDER BY created_at DESC
+    </select>
+
+    <update id="update" parameterType="com.bom.entity.Drawing">
+        UPDATE drawing
+        <set>
+            <if test="drawingName != null">drawing_name = #{drawingName},</if>
+            <if test="fileFormat != null">file_format = #{fileFormat},</if>
+            <if test="fileSize != null">file_size = #{fileSize},</if>
+            <if test="storagePath != null">storage_path = #{storagePath},</if>
+            <if test="previewPath != null">preview_path = #{previewPath},</if>
+            <if test="previewStatus != null">preview_status = #{previewStatus},</if>
+            <if test="latestVersion != null">latest_version = #{latestVersion},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

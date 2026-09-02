@@ -1,0 +1,1 @@
+import{I as a}from"./index-BUOObtjA.js";function e(t){return a.post("/drawing/batch-upload",t,{headers:{"Content-Type":"multipart/form-data"},timeout:3e5})}function n(t){return a.get(`/drawing/material/${t}`)}export{e as b,n as g};

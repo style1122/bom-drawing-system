@@ -1,0 +1,15 @@
+com\bom\entity\AuditLog.class
+com\bom\mapper\RequisitionMapper.class
+com\bom\mapper\MaterialMapper.class
+com\bom\entity\RequisitionItem.class
+com\bom\entity\ShareToken.class
+com\bom\entity\Requisition.class
+com\bom\mapper\AuditLogMapper.class
+com\bom\entity\SysUser.class
+com\bom\entity\Drawing.class
+com\bom\entity\Material.class
+com\bom\mapper\DrawingMapper.class
+com\bom\entity\ErpSyncCursor.class
+com\bom\mapper\SysUserMapper.class
+com\bom\mapper\ShareTokenMapper.class
+com\bom\mapper\ErpSyncCursorMapper.class

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bom.mapper.ShareTokenMapper">
+
+    <resultMap id="shareTokenMap" type="com.bom.entity.ShareToken">
+        <id property="id" column="id"/>
+        <result property="token" column="token"/>
+        <result property="materialId" column="material_id"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="expireAt" column="expire_at"/>
+        <result property="visitCount" column="visit_count"/>
+        <result property="lastVisitAt" column="last_visit_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="isValid" column="is_valid"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.bom.entity.ShareToken"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO share_token (token, material_id, created_by, expire_at,
+                                 visit_count, created_at, is_valid)
+        VALUES (#{token}, #{materialId}, #{createdBy}, #{expireAt},
+                0, GETDATE(), 1)
+    </insert>
+
+    <select id="findByToken" resultMap="shareTokenMap">
+        SELECT * FROM share_token WHERE token = #{token}
+    </select>
+
+    <update id="incrementVisitCount">
+        UPDATE share_token
+        SET visit_count = visit_count + 1,
+            last_visit_at = GETDATE()
+        WHERE token = #{token}
+    </update>
+
+    <update id="invalidate">
+        UPDATE share_token SET is_valid = 0 WHERE token = #{token}
+    </update>
+
+    <delete id="deleteExpired">
+        DELETE FROM share_token WHERE expire_at &lt; GETDATE()
+    </delete>
+</mapper>
