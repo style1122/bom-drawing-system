@@ -6,5 +6,5 @@ REM
 REM 如需在本地覆盖密钥，可在此设置（建议改为 Windows“系统环境变量”以便服务也能读取）：
 REM set JDBC_PASSWORD=YourStrongPassword
 REM set ERP_APPSECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-java -jar "%~dp0bom-drawing-system.jar"
+java -Dfile.encoding=UTF-8 -jar "%~dp0bom-drawing-system.jar"
 endlocal

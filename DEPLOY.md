@@ -179,6 +179,8 @@ C:\apps\
 - 应用日志：`C:\apps\bom-drawing-system\logs\bom-system.log`（按天滚动，保留 30 天）。
 - 服务控制台：`bom-drawing-system.out.log` / `bom-drawing-system.err.log`（WinSW 生成）。
 - nginx 日志：`nginx\logs\access.log` / `error.log`。
+- **中文显示乱码**：日志文件本身是 UTF-8。在中文 Windows 默认 `cmd`（代码页 cp936/GBK）里直接 `java -jar` 运行，或拿旧版记事本打开日志，会把 UTF-8 字节当成 GBK 显示成乱码（如 `璁よ瘉鎴愬姛`）。
+  正确处理方式（二选一）：① 用支持 UTF-8 的查看器——**VS Code / Notepad++ / 现代记事本**打开日志文件；② 调试时在 UTF-8 终端里跑：用 `start.bat`（已内置 `chcp 65001`）或 Windows Terminal（默认 UTF-8），再 `java -jar`。无需改动日志编码。
 
 ### 端口冲突
 - 若 8080 被占用：设置系统环境变量 `SERVER_PORT=8090`（或改 `application.yml` 的 `server.port`），并同步修改 nginx `proxy_pass` 的端口。

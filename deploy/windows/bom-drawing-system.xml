@@ -3,7 +3,7 @@
   <name>BOM Drawing System</name>
   <description>BOM 图纸管理系统后端服务 (Spring Boot + MyBatis-Plus + SQL Server 2019)</description>
   <executable>java</executable>
-  <arguments>-Xms512m -Xmx1024m -jar "%BASE%\bom-drawing-system.jar"</arguments>
+  <arguments>-Xms512m -Xmx1024m -Dfile.encoding=UTF-8 -jar "%BASE%\bom-drawing-system.jar"</arguments>
   <workingdirectory>%BASE%</workingdirectory>
   <logpath>%BASE%\logs</logpath>
   <logmode>rotate</logmode>
