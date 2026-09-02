@@ -7,7 +7,7 @@ node_modules/
 # ---- 构建产物（避免历史 181MB 体积，部署用 deploy/ + 服务器构建）----
 target/
 **/target/
-bom-frontend/dist/
+frontend/dist/
 *.class
 *.jar
 *.war

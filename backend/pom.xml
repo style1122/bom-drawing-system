@@ -4,24 +4,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- 继承根 POM（spring-boot-starter-parent 2.7.18，Java 8 + javax.servlet） -->
     <parent>
         <groupId>com.bom</groupId>
         <artifactId>bom-drawing-system</artifactId>
         <version>1.0.0</version>
     </parent>
 
-    <!-- 改造为可执行 JAR（内嵌 Tomcat），由 spring-boot-maven-plugin 打包 -->
-    <artifactId>bom-web</artifactId>
+    <!-- 单模块后端：合并原 bom-common / bom-dao / bom-service / bom-web 四个模块 -->
+    <artifactId>backend</artifactId>
     <packaging>jar</packaging>
-    <name>bom-web</name>
+    <name>bom-drawing-system-backend</name>
 
     <dependencies>
-        <dependency>
-            <groupId>com.bom</groupId>
-            <artifactId>bom-service</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- Spring Boot Web（内嵌 Tomcat，javax.servlet 4.0） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -51,6 +46,28 @@
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- 事务（@Transactional / ERP 定时同步任务） -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+        </dependency>
+
+        <!-- Apache POI（Excel 导入导出） -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+        </dependency>
+
+        <!-- Commons -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
         </dependency>
     </dependencies>
 

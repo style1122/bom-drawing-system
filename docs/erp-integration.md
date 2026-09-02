@@ -64,7 +64,7 @@
 
 ## 3. 配置
 
-### 3.1 ERP 连接配置（bom-web/src/main/resources/erp.properties）
+### 3.1 ERP 连接配置（backend/src/main/resources/application.yml，密钥经环境变量 ERP_* 注入）
 
 ```properties
 erp.base-url=http://10.1.1.15:860      # ESB 服务地址（含端口，正航 ESB 端口为 860）

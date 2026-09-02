@@ -19,10 +19,7 @@
     <name>BOM Drawing Management System</name>
 
     <modules>
-        <module>bom-common</module>
-        <module>bom-dao</module>
-        <module>bom-service</module>
-        <module>bom-web</module>
+        <module>backend</module>
     </modules>
 
     <properties>

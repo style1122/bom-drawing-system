@@ -34,7 +34,7 @@
 | nginx | for Windows 1.24+ | 托管前端 + 反向代理 |
 | WinSW | v2/v3 (x64) | 将 JAR 注册为 Windows 服务 |
 
-> 构建机与部署机可同一台，也可分开：只需把 `bom-drawing-system.jar` 与 `bom-frontend/dist` 拷贝到服务器。
+> 构建机与部署机可同一台，也可分开：只需把 `bom-drawing-system.jar` 与 `frontend/dist` 拷贝到服务器。
 
 ---
 
@@ -73,12 +73,12 @@ build.bat
 
 ```bat
 mvn clean package -DskipTests
-cd bom-frontend && npm install && npm run build
+cd frontend && npm install && npm run build
 ```
 
 产物：
-- 后端：`bom-web\target\bom-drawing-system.jar`（finalName=`bom-drawing-system`）
-- 前端：`bom-frontend\dist\`
+- 后端：`backend\target\bom-drawing-system.jar`（finalName=`bom-drawing-system`）
+- 前端：`frontend\dist\`
 
 > ⚠️ 本环境未能联网执行 `mvn` 验证编译，请在构建机上执行 `mvn clean package` 确认通过后，
 > 再将 jar 部署到服务器。如编译报错，按错误修正后重新打包（迁移已尽量保持与现有代码兼容）。
@@ -137,7 +137,7 @@ uninstall-service.bat            # 卸载服务
 
 ## 7. 部署前端（nginx）
 
-1. 建目录 `C:\apps\bom-drawing-system\frontend\`，将 `bom-frontend\dist\` 整个拷贝到 `...\frontend\dist`。
+1. 建目录 `C:\apps\bom-drawing-system\frontend\`，将 `frontend\dist\` 整个拷贝到 `...\frontend\dist`。
 2. 安装 **nginx for Windows**，将 `deploy\nginx\bom-drawing-system.conf` 复制到 `nginx\conf\`。
 3. 在 `nginx\conf\nginx.conf` 的 `http { ... }` 内添加：
    ```nginx
