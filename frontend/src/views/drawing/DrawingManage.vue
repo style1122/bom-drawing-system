@@ -849,4 +849,13 @@ onMounted(() => {
 .page-container :deep(.el-table) {
   font-size: 12px;
 }
+
+/* 所有单元格内边距缩小 1px（竖向 12->11，横向 .cell 12->11），使表格更紧凑 */
+.page-container :deep(.el-table td.el-table__cell) {
+  padding: 11px 0;
+}
+
+.page-container :deep(.el-table .cell) {
+  padding: 0 11px;
+}
 </style>
