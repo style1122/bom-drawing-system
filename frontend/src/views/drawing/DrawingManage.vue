@@ -21,7 +21,6 @@
             :loading="erpSyncing"
             @click="handleErpSync"
           >ERP物料同步</el-button>
-          <el-button :icon="Connection" :loading="erpTesting" @click="handleErpTest">测试ERP连接</el-button>
           <el-button :icon="Link" :loading="erpFlagSyncing" @click="handleErpSyncFlag">同步ERP图纸标记</el-button>
           <el-button :icon="Upload" @click="handleUpload">上传图纸</el-button>
         </template>
@@ -265,11 +264,11 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Search, Upload, Download, Delete, View, Refresh, UploadFilled, FullScreen, Crop, Close, Connection, Link, ArrowDown
+  Search, Upload, Download, Delete, View, Refresh, UploadFilled, FullScreen, Crop, Close, Link, ArrowDown
 } from '@element-plus/icons-vue'
 import {
   getMaterialList, searchMaterial, deleteMaterial,
-  erpSyncMaterial, erpTestConnection, erpSyncDrawingFlag
+  erpSyncMaterial, erpSyncDrawingFlag
 } from '@/api/material'
 import { uploadDrawing, batchUploadDrawings, getDrawingsByMaterialId } from '@/api/drawing'
 import { createShare } from '@/api/share'
@@ -318,7 +317,6 @@ const previewFullscreen = ref(false)
 
 // ERP 同步
 const erpSyncing = ref(false)
-const erpTesting = ref(false)
 const erpFlagSyncing = ref(false)
 
 // 日期格式化
@@ -379,20 +377,6 @@ function onHeaderFilter(key, cmd) {
   filters[key] = cmd === 'all' ? null : Number(cmd)
   currentPage.value = 1
   fetchData()
-}
-
-// 测试 ERP 连接
-async function handleErpTest() {
-  erpTesting.value = true
-  try {
-    const res = await erpTestConnection()
-    const data = res.data || {}
-    ElMessage.success(`ERP连接成功：token有效期 ${data.timeout || '-'} 秒`)
-  } catch (err) {
-    console.error(err)
-  } finally {
-    erpTesting.value = false
-  }
 }
 
 // 手动同步 ERP 物料基础数据
@@ -855,14 +839,14 @@ onMounted(() => {
   color: #409eff;
 }
 
-/* 页面整体字号缩小一号（14px -> 13px）：覆盖 Element Plus 基础字号变量，
+/* 页面整体字号缩小（14px -> 12px）：覆盖 Element Plus 基础字号变量，
    使表格/按钮/标签/分页等组件统一跟随缩小 */
 .page-container {
-  --el-font-size-base: 13px;
-  font-size: 13px;
+  --el-font-size-base: 12px;
+  font-size: 12px;
 }
 
 .page-container :deep(.el-table) {
-  font-size: 13px;
+  font-size: 12px;
 }
 </style>

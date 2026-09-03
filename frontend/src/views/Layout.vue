@@ -1,6 +1,6 @@
 <template>
   <el-container class="layout-container">
-    <el-aside :width="isCollapse ? '64px' : '220px'" class="layout-aside">
+    <el-aside :width="isCollapse ? '64px' : '210px'" class="layout-aside">
       <div class="logo" @click="router.push(userStore.homePath)">
         <span v-if="!isCollapse" class="logo-text">BOM图纸管理</span>
         <span v-else class="logo-text-mini">BOM</span>

@@ -36,10 +36,6 @@ export function getMaterialList(page = 1, size = 20, filters = {}) {
 
 // ===== 正航 T9 ERP 物料同步 =====
 
-export function erpTestConnection() {
-  return request.post('/material/erp/test', null, { timeout: 120000 })
-}
-
 export function erpSyncMaterial(condition = '') {
   return request.post('/material/erp/sync', { condition }, { timeout: 180000 })
 }
