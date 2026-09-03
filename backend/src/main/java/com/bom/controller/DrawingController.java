@@ -1,6 +1,7 @@
 package com.bom.controller;
 
 import com.bom.entity.Drawing;
+import com.bom.interceptor.LoginInterceptor;
 import com.bom.service.AuditLogService;
 import com.bom.service.DrawingService;
 import com.bom.util.Result;
@@ -89,8 +90,25 @@ public class DrawingController {
             }
 
             // 记录下载审计（失败不影响下载本身）
+            // 下载接口被放行登录校验，request 中可能没有 userId；
+            // 优先从 token 解析真实用户，拿不到则降级为匿名哨兵值（user_id 非空约束）。
             try {
                 Long uid = (Long) request.getAttribute("userId");
+                if (uid == null) {
+                    String token = request.getHeader("Authorization");
+                    if (token != null && token.startsWith("Bearer ")) {
+                        token = token.substring(7);
+                    }
+                    if (token == null || token.isEmpty()) {
+                        token = request.getParameter("token");
+                    }
+                    if (token != null && !token.isEmpty()) {
+                        uid = LoginInterceptor.getUserIdByToken(token);
+                    }
+                }
+                if (uid == null) {
+                    uid = 0L; // 匿名 / 公开分享下载
+                }
                 auditLogService.log(uid, "下载", "DRAWING", id, drawing.getDrawingName(), request.getRemoteAddr());
             } catch (Exception ignored) {
                 logger.warn("记录下载审计失败 drawingId={}", id, ignored);
