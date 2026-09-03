@@ -32,7 +32,15 @@
         </el-row>
 
         <el-row :gutter="20" style="margin-bottom: 20px" class="chart-row">
-          <el-col :span="14" class="chart-col">
+          <el-col :span="8" class="chart-col">
+            <el-card>
+              <template #header>
+                <span>每日上传图纸数量（近 30 天）</span>
+              </template>
+              <LineChart :points="dailyPoints" color="#409eff" :height="260" />
+            </el-card>
+          </el-col>
+          <el-col :span="8" class="chart-col">
             <el-card>
               <template #header>
                 <span>图纸类型数量对比</span>
@@ -40,7 +48,7 @@
               <LineChart :points="typePoints" type="bar" color="#409eff" :height="260" />
             </el-card>
           </el-col>
-          <el-col :span="10" class="chart-col">
+          <el-col :span="8" class="chart-col">
             <el-card>
               <template #header>
                 <span>总存储占用增长趋势（近 30 天）</span>
@@ -56,17 +64,6 @@
                 :value-formatter="formatBytes"
                 :height="260"
               />
-            </el-card>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20" style="margin-bottom: 20px">
-          <el-col :span="24">
-            <el-card>
-              <template #header>
-                <span>每日上传图纸数量（近 30 天）</span>
-              </template>
-              <LineChart :points="dailyPoints" color="#409eff" :height="260" />
             </el-card>
           </el-col>
         </el-row>
