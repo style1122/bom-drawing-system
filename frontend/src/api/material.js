@@ -1,7 +1,11 @@
 import request from './request'
 
-export function searchMaterial(keyword, page = 1, size = 20) {
-  return request.get('/material/search', { params: { keyword, page, size } })
+export function searchMaterial(keyword, page = 1, size = 20, filters = {}) {
+  const params = { keyword, page, size }
+  if (filters.hasDrawing !== undefined && filters.hasDrawing !== null && filters.hasDrawing !== '') params.hasDrawing = filters.hasDrawing
+  if (filters.has3d !== undefined && filters.has3d !== null && filters.has3d !== '') params.has3d = filters.has3d
+  if (filters.hasEngineering !== undefined && filters.hasEngineering !== null && filters.hasEngineering !== '') params.hasEngineering = filters.hasEngineering
+  return request.get('/material/search', { params })
 }
 
 export function importMaterial(formData) {
@@ -22,8 +26,12 @@ export function deleteMaterial(id) {
   return request.delete(`/material/${id}`)
 }
 
-export function getMaterialList(page = 1, size = 20) {
-  return request.get('/material/list', { params: { page, size } })
+export function getMaterialList(page = 1, size = 20, filters = {}) {
+  const params = { page, size }
+  if (filters.hasDrawing !== undefined && filters.hasDrawing !== null && filters.hasDrawing !== '') params.hasDrawing = filters.hasDrawing
+  if (filters.has3d !== undefined && filters.has3d !== null && filters.has3d !== '') params.has3d = filters.has3d
+  if (filters.hasEngineering !== undefined && filters.hasEngineering !== null && filters.hasEngineering !== '') params.hasEngineering = filters.hasEngineering
+  return request.get('/material/list', { params })
 }
 
 // ===== 正航 T9 ERP 物料同步 =====

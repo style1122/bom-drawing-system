@@ -12,6 +12,39 @@
         />
         <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
         <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+        <el-select
+          v-model="filters.hasDrawing"
+          placeholder="是否存在图纸"
+          clearable
+          style="width: 130px"
+          @change="handleSearch"
+        >
+          <el-option label="全部" :value="null" />
+          <el-option label="是" :value="1" />
+          <el-option label="否" :value="0" />
+        </el-select>
+        <el-select
+          v-model="filters.has3d"
+          placeholder="是否存在三维"
+          clearable
+          style="width: 130px"
+          @change="handleSearch"
+        >
+          <el-option label="全部" :value="null" />
+          <el-option label="是" :value="1" />
+          <el-option label="否" :value="0" />
+        </el-select>
+        <el-select
+          v-model="filters.hasEngineering"
+          placeholder="是否存在工程"
+          clearable
+          style="width: 130px"
+          @change="handleSearch"
+        >
+          <el-option label="全部" :value="null" />
+          <el-option label="是" :value="1" />
+          <el-option label="否" :value="0" />
+        </el-select>
       </div>
       <div class="toolbar-right">
         <template v-if="canEditDrawings">
@@ -61,11 +94,6 @@
           <el-tag :type="row.source === 'ERP' ? 'success' : 'info'" size="small" effect="plain">
             {{ row.source === 'ERP' ? 'ERP' : '手工' }}
           </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="ERP同步时间" width="160" align="center">
-        <template #default="{ row }">
-          {{ formatDateTime(row.erpSyncTime) }}
         </template>
       </el-table-column>
       <el-table-column label="ERP图纸标记" width="110" align="center">
@@ -249,6 +277,13 @@ const keyword = ref('')
 const tableData = ref([])
 const selectedRow = ref(null)
 
+// 图纸存在性筛选：null=全部，1=是，0=否
+const filters = reactive({
+  hasDrawing: null,
+  has3d: null,
+  hasEngineering: null
+})
+
 // 分页
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -293,8 +328,8 @@ async function fetchData() {
   error.value = ''
   try {
     const res = keyword.value.trim()
-      ? await searchMaterial(keyword.value.trim(), currentPage.value, pageSize.value)
-      : await getMaterialList(currentPage.value, pageSize.value)
+      ? await searchMaterial(keyword.value.trim(), currentPage.value, pageSize.value, filters)
+      : await getMaterialList(currentPage.value, pageSize.value, filters)
     // 后端返回 PageResult: { list, total, page, size }
     const pageData = res.data || {}
     const list = pageData.list || []
@@ -322,6 +357,9 @@ function handleSearch() {
 
 function handleReset() {
   keyword.value = ''
+  filters.hasDrawing = null
+  filters.has3d = null
+  filters.hasEngineering = null
   selectedRow.value = null
   currentPage.value = 1
   fetchData()

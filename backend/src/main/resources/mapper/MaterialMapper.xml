@@ -148,6 +148,30 @@
            OR m.specification LIKE '%' + #{keyword} + '%'
     </sql>
 
+    <!-- 图纸存在性筛选片段（与 materialWithDrawingJoins 中 has_drawing/has_3d/has_engineering 口径一致）
+         hasDrawing=1 表示有PDF / has3d=1 表示有三维(sldprt,sldasm) / hasEngineering=1 表示有工程图(slddrw)
+         null 表示不过滤 -->
+    <sql id="drawingFilter">
+        <if test="hasDrawing != null">
+            <choose>
+                <when test="hasDrawing == 1">AND EXISTS (SELECT 1 FROM drawing d WHERE d.material_id = m.id AND LOWER(d.file_format) = 'pdf')</when>
+                <otherwise>AND NOT EXISTS (SELECT 1 FROM drawing d WHERE d.material_id = m.id AND LOWER(d.file_format) = 'pdf')</otherwise>
+            </choose>
+        </if>
+        <if test="has3d != null">
+            <choose>
+                <when test="has3d == 1">AND EXISTS (SELECT 1 FROM drawing d WHERE d.material_id = m.id AND LOWER(d.file_format) IN ('sldprt', 'sldasm'))</when>
+                <otherwise>AND NOT EXISTS (SELECT 1 FROM drawing d WHERE d.material_id = m.id AND LOWER(d.file_format) IN ('sldprt', 'sldasm'))</otherwise>
+            </choose>
+        </if>
+        <if test="hasEngineering != null">
+            <choose>
+                <when test="hasEngineering == 1">AND EXISTS (SELECT 1 FROM drawing d WHERE d.material_id = m.id AND LOWER(d.file_format) = 'slddrw')</when>
+                <otherwise>AND NOT EXISTS (SELECT 1 FROM drawing d WHERE d.material_id = m.id AND LOWER(d.file_format) = 'slddrw')</otherwise>
+            </choose>
+        </if>
+    </sql>
+
     <select id="search" resultMap="materialWithDrawingMap">
         <include refid="materialWithDrawingJoins"/>
         <include refid="searchCondition"/>
@@ -163,18 +187,27 @@
 
     <select id="findAllPaged" resultMap="materialWithDrawingMap">
         <include refid="materialWithDrawingJoins"/>
+        <where>
+            <include refid="drawingFilter"/>
+        </where>
         ORDER BY m.id DESC
         OFFSET #{offset} ROWS
         FETCH NEXT #{size} ROWS ONLY
     </select>
 
     <select id="countAll" resultType="long">
-        SELECT COUNT(*) FROM material
+        SELECT COUNT(*) FROM material m
+        <where>
+            <include refid="drawingFilter"/>
+        </where>
     </select>
 
     <select id="searchPaged" resultMap="materialWithDrawingMap">
         <include refid="materialWithDrawingJoins"/>
-        <include refid="searchCondition"/>
+        WHERE (m.material_code LIKE '%' + #{keyword} + '%'
+               OR m.material_name LIKE '%' + #{keyword} + '%'
+               OR m.specification LIKE '%' + #{keyword} + '%')
+        <include refid="drawingFilter"/>
         ORDER BY m.id DESC
         OFFSET #{offset} ROWS
         FETCH NEXT #{size} ROWS ONLY
@@ -182,7 +215,10 @@
 
     <select id="countSearch" resultType="long">
         SELECT COUNT(*) FROM material m
-        <include refid="searchCondition"/>
+        WHERE (m.material_code LIKE '%' + #{keyword} + '%'
+               OR m.material_name LIKE '%' + #{keyword} + '%'
+               OR m.specification LIKE '%' + #{keyword} + '%')
+        <include refid="drawingFilter"/>
     </select>
 
     <select id="findById" resultMap="materialMap">

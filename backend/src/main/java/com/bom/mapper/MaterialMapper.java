@@ -38,15 +38,26 @@ public interface MaterialMapper extends BaseMapper<Material> {
 
     // ===== 分页查询 =====
 
-    /** 分页查询全部物料（带图纸统计） */
-    List<Material> findAllPaged(@Param("offset") int offset, @Param("size") int size);
+    /** 分页查询全部物料（带图纸统计 + 图纸存在性筛选） */
+    List<Material> findAllPaged(@Param("offset") int offset, @Param("size") int size,
+                                @Param("hasDrawing") Integer hasDrawing,
+                                @Param("has3d") Integer has3d,
+                                @Param("hasEngineering") Integer hasEngineering);
 
-    /** 全部物料总数 */
-    long countAll();
+    /** 全部物料总数（含图纸存在性筛选） */
+    long countAll(@Param("hasDrawing") Integer hasDrawing,
+                  @Param("has3d") Integer has3d,
+                  @Param("hasEngineering") Integer hasEngineering);
 
-    /** 分页搜索物料（带图纸统计） */
-    List<Material> searchPaged(@Param("keyword") String keyword, @Param("offset") int offset, @Param("size") int size);
+    /** 分页搜索物料（带图纸统计 + 图纸存在性筛选） */
+    List<Material> searchPaged(@Param("keyword") String keyword, @Param("offset") int offset, @Param("size") int size,
+                                @Param("hasDrawing") Integer hasDrawing,
+                                @Param("has3d") Integer has3d,
+                                @Param("hasEngineering") Integer hasEngineering);
 
-    /** 搜索结果总数 */
-    long countSearch(@Param("keyword") String keyword);
+    /** 搜索结果总数（含图纸存在性筛选） */
+    long countSearch(@Param("keyword") String keyword,
+                     @Param("hasDrawing") Integer hasDrawing,
+                     @Param("has3d") Integer has3d,
+                     @Param("hasEngineering") Integer hasEngineering);
 }

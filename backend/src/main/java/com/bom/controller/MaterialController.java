@@ -31,8 +31,11 @@ public class MaterialController {
     @GetMapping("/search")
     public Result search(@RequestParam(required = false) String keyword,
                          @RequestParam(defaultValue = "1") int page,
-                         @RequestParam(defaultValue = "20") int size) {
-        PageResult<Material> result = materialService.searchPaged(keyword, page, size);
+                         @RequestParam(defaultValue = "20") int size,
+                         @RequestParam(required = false) Integer hasDrawing,
+                         @RequestParam(required = false) Integer has3d,
+                         @RequestParam(required = false) Integer hasEngineering) {
+        PageResult<Material> result = materialService.searchPaged(keyword, page, size, hasDrawing, has3d, hasEngineering);
         return Result.success(result);
     }
 
@@ -106,8 +109,11 @@ public class MaterialController {
 
     @GetMapping("/list")
     public Result list(@RequestParam(defaultValue = "1") int page,
-                       @RequestParam(defaultValue = "20") int size) {
-        PageResult<Material> result = materialService.getAllPaged(page, size);
+                       @RequestParam(defaultValue = "20") int size,
+                       @RequestParam(required = false) Integer hasDrawing,
+                       @RequestParam(required = false) Integer has3d,
+                       @RequestParam(required = false) Integer hasEngineering) {
+        PageResult<Material> result = materialService.getAllPaged(page, size, hasDrawing, has3d, hasEngineering);
         return Result.success(result);
     }
 
