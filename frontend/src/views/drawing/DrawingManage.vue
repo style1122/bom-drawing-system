@@ -12,39 +12,6 @@
         />
         <el-button type="primary" :icon="Search" @click="handleSearch">查询</el-button>
         <el-button :icon="Refresh" @click="handleReset">重置</el-button>
-        <el-select
-          v-model="filters.hasDrawing"
-          placeholder="是否存在图纸"
-          clearable
-          style="width: 130px"
-          @change="handleSearch"
-        >
-          <el-option label="全部" :value="null" />
-          <el-option label="是" :value="1" />
-          <el-option label="否" :value="0" />
-        </el-select>
-        <el-select
-          v-model="filters.has3d"
-          placeholder="是否存在三维"
-          clearable
-          style="width: 130px"
-          @change="handleSearch"
-        >
-          <el-option label="全部" :value="null" />
-          <el-option label="是" :value="1" />
-          <el-option label="否" :value="0" />
-        </el-select>
-        <el-select
-          v-model="filters.hasEngineering"
-          placeholder="是否存在工程"
-          clearable
-          style="width: 130px"
-          @change="handleSearch"
-        >
-          <el-option label="全部" :value="null" />
-          <el-option label="是" :value="1" />
-          <el-option label="否" :value="0" />
-        </el-select>
       </div>
       <div class="toolbar-right">
         <template v-if="canEditDrawings">
@@ -105,21 +72,63 @@
       </el-table-column>
       <el-table-column prop="drawingAddDate" label="图纸新增日期" width="150" align="center" />
       <el-table-column prop="drawingUpdateDate" label="图纸修改时间" width="150" align="center" />
-      <el-table-column label="是否存在图纸" width="110" align="center">
+      <el-table-column label="是否存在图纸" width="140" align="center">
+        <template #header>
+          <el-dropdown trigger="click" @command="(cmd) => onHeaderFilter('hasDrawing', cmd)">
+            <span class="col-filter" :class="{ active: filters.hasDrawing !== null }">
+              是否存在图纸 <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="all">全部</el-dropdown-item>
+                <el-dropdown-item command="1">是</el-dropdown-item>
+                <el-dropdown-item command="0">否</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
         <template #default="{ row }">
           <el-tag :type="row.hasDrawing ? 'success' : 'info'" size="small" effect="dark">
             {{ row.hasDrawing ? '是' : '否' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="是否存在三维" width="110" align="center">
+      <el-table-column label="是否存在三维" width="140" align="center">
+        <template #header>
+          <el-dropdown trigger="click" @command="(cmd) => onHeaderFilter('has3d', cmd)">
+            <span class="col-filter" :class="{ active: filters.has3d !== null }">
+              是否存在三维 <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="all">全部</el-dropdown-item>
+                <el-dropdown-item command="1">是</el-dropdown-item>
+                <el-dropdown-item command="0">否</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
         <template #default="{ row }">
           <el-tag :type="row.has3d ? 'success' : 'info'" size="small" effect="dark">
             {{ row.has3d ? '是' : '否' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="是否存在工程" width="110" align="center">
+      <el-table-column label="是否存在工程" width="140" align="center">
+        <template #header>
+          <el-dropdown trigger="click" @command="(cmd) => onHeaderFilter('hasEngineering', cmd)">
+            <span class="col-filter" :class="{ active: filters.hasEngineering !== null }">
+              是否存在工程 <el-icon><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="all">全部</el-dropdown-item>
+                <el-dropdown-item command="1">是</el-dropdown-item>
+                <el-dropdown-item command="0">否</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
         <template #default="{ row }">
           <el-tag :type="row.hasEngineering ? 'success' : 'info'" size="small" effect="dark">
             {{ row.hasEngineering ? '是' : '否' }}
@@ -256,7 +265,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Search, Upload, Download, Delete, View, Refresh, UploadFilled, FullScreen, Crop, Close, Connection, Link
+  Search, Upload, Download, Delete, View, Refresh, UploadFilled, FullScreen, Crop, Close, Connection, Link, ArrowDown
 } from '@element-plus/icons-vue'
 import {
   getMaterialList, searchMaterial, deleteMaterial,
@@ -361,6 +370,13 @@ function handleReset() {
   filters.has3d = null
   filters.hasEngineering = null
   selectedRow.value = null
+  currentPage.value = 1
+  fetchData()
+}
+
+// 表头下拉筛选：cmd 为 'all'/'1'/'0'，对应 全部/是/否（服务端筛选）
+function onHeaderFilter(key, cmd) {
+  filters[key] = cmd === 'all' ? null : Number(cmd)
   currentPage.value = 1
   fetchData()
 }
@@ -815,5 +831,27 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+.col-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  outline: none;
+  user-select: none;
+}
+
+.col-filter .el-icon {
+  font-size: 12px;
+  color: #c0c4cc;
+}
+
+.col-filter.active {
+  color: #409eff;
+}
+
+.col-filter.active .el-icon {
+  color: #409eff;
 }
 </style>
