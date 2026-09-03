@@ -51,27 +51,27 @@
       style="width: 100%"
       @current-change="handleCurrentChange"
     >
-      <el-table-column type="index" label="序号" width="60" align="center" :index="indexMethod" />
+      <el-table-column type="index" label="序号" width="55" align="center" :index="indexMethod" />
       <el-table-column prop="materialCode" label="物料编码" min-width="120" show-overflow-tooltip />
       <el-table-column prop="materialName" label="物料名称" min-width="150" show-overflow-tooltip />
       <el-table-column prop="specification" label="物料规格/图号" min-width="180" show-overflow-tooltip />
-      <el-table-column label="来源" width="90" align="center">
+      <el-table-column label="来源" width="80" align="center">
         <template #default="{ row }">
           <el-tag :type="row.source === 'ERP' ? 'success' : 'info'" size="small" effect="plain">
             {{ row.source === 'ERP' ? 'ERP' : '手工' }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="ERP图纸标记" width="110" align="center">
+      <el-table-column label="ERP图纸标记" width="100" align="center">
         <template #default="{ row }">
           <el-tag v-if="row.erpHaveDrawing === 1" type="success" size="small" effect="dark">是</el-tag>
           <el-tag v-else-if="row.erpHaveDrawing === 0" type="info" size="small" effect="plain">否</el-tag>
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="drawingAddDate" label="图纸新增日期" width="150" align="center" />
-      <el-table-column prop="drawingUpdateDate" label="图纸修改时间" width="150" align="center" />
-      <el-table-column label="是否存在图纸" width="140" align="center">
+      <el-table-column prop="drawingAddDate" label="图纸新增日期" width="140" align="center" />
+      <el-table-column prop="drawingUpdateDate" label="图纸修改时间" width="140" align="center" />
+      <el-table-column label="是否存在图纸" width="130" align="center">
         <template #header>
           <el-dropdown trigger="click" @command="(cmd) => onHeaderFilter('hasDrawing', cmd)">
             <span class="col-filter" :class="{ active: filters.hasDrawing !== null }">
@@ -92,7 +92,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="是否存在三维" width="140" align="center">
+      <el-table-column label="是否存在三维" width="130" align="center">
         <template #header>
           <el-dropdown trigger="click" @command="(cmd) => onHeaderFilter('has3d', cmd)">
             <span class="col-filter" :class="{ active: filters.has3d !== null }">
@@ -113,7 +113,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="是否存在工程" width="140" align="center">
+      <el-table-column label="是否存在工程" width="130" align="center">
         <template #header>
           <el-dropdown trigger="click" @command="(cmd) => onHeaderFilter('hasEngineering', cmd)">
             <span class="col-filter" :class="{ active: filters.hasEngineering !== null }">
@@ -134,7 +134,7 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="250" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link @click.stop="handleRowDownloadPdf(row)">下载PDF图纸</el-button>
           <el-button type="warning" link @click.stop="handleVersions(row)">版本管理</el-button>
@@ -852,10 +852,10 @@ onMounted(() => {
 
 /* 所有单元格内边距缩小 1px（竖向 12->11，横向 .cell 12->11），使表格更紧凑 */
 .page-container :deep(.el-table td.el-table__cell) {
-  padding: 11px 0;
+  padding: 10px 0;
 }
 
 .page-container :deep(.el-table .cell) {
-  padding: 0 11px;
+  padding: 0 10px;
 }
 </style>
