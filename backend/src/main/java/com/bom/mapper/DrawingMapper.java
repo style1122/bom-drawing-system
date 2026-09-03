@@ -45,4 +45,7 @@ public interface DrawingMapper extends BaseMapper<Drawing> {
 
     /** 图纸文件总占用空间（字节，无记录返回 0） */
     long sumTotalSize();
+
+    /** 按图纸类型统计数量：PDF 图纸 / 三维图纸 / 工程图纸 */
+    Map<String, Object> countByCategory();
 }

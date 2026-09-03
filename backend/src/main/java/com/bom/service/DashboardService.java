@@ -53,6 +53,12 @@ public class DashboardService {
         long baseline = Math.max(totalBytes - windowSum, 0L);
         data.put("storageTrendList", fillCumulative(sizeRaw, days, baseline));
 
+        // 图纸类型数量对比：PDF 图纸 / 三维图纸 / 工程图纸
+        Map<String, Object> cat = drawingMapper.countByCategory();
+        data.put("pdfCount", ((Number) cat.get("pdf_count")).longValue());
+        data.put("model3dCount", ((Number) cat.get("model3d_count")).longValue());
+        data.put("engineeringCount", ((Number) cat.get("engineering_count")).longValue());
+
         return data;
     }
 

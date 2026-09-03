@@ -60,6 +60,17 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="20" style="margin-bottom: 20px">
+          <el-col :span="24">
+            <el-card>
+              <template #header>
+                <span>图纸类型数量对比</span>
+              </template>
+              <LineChart :points="typePoints" type="bar" color="#409eff" :height="260" />
+            </el-card>
+          </el-col>
+        </el-row>
+
         <el-card>
           <template #header>
             <span>最近操作日志</span>
@@ -148,6 +159,13 @@ const storagePoints = computed(() =>
   (stats.value?.storageTrendList || []).map(d => ({ label: d.date, value: d.cumulativeBytes }))
 )
 const totalStorage = computed(() => stats.value?.totalStorageBytes || 0)
+
+// 图纸类型数量对比：PDF 图纸 / 三维图纸 / 工程图纸
+const typePoints = computed(() => [
+  { label: 'PDF 图纸', value: stats.value?.pdfCount || 0 },
+  { label: '三维图纸', value: stats.value?.model3dCount || 0 },
+  { label: '工程图纸', value: stats.value?.engineeringCount || 0 }
+])
 
 function formatBytes(bytes) {
   if (bytes == null) return '-'

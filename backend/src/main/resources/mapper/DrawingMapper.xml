@@ -105,6 +105,16 @@
         SELECT ISNULL(SUM(file_size), 0) FROM drawing
     </select>
 
+    <!-- 按图纸类型统计数量（按 file_format 归类：
+         PDF 图纸 = pdf；三维图纸 = sldprt/sldasm/step/stp/iges/igs；工程图纸 = slddrw/dwg/dxf） -->
+    <select id="countByCategory" resultType="map">
+        SELECT
+            ISNULL(SUM(CASE WHEN LOWER(file_format) = 'pdf' THEN 1 ELSE 0 END), 0) AS pdf_count,
+            ISNULL(SUM(CASE WHEN LOWER(file_format) IN ('sldprt','sldasm','step','stp','iges','igs') THEN 1 ELSE 0 END), 0) AS model3d_count,
+            ISNULL(SUM(CASE WHEN LOWER(file_format) IN ('slddrw','dwg','dxf') THEN 1 ELSE 0 END), 0) AS engineering_count
+        FROM drawing
+    </select>
+
     <update id="update" parameterType="com.bom.entity.Drawing">
         UPDATE drawing
         <set>

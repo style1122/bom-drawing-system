@@ -40,21 +40,35 @@
         fill="#909399"
       >{{ lb.text }}</text>
 
-      <!-- 面积填充 -->
-      <path v-if="area && pathArea" :d="pathArea" :fill="color" fill-opacity="0.14" />
+      <!-- 折线模式：面积 + 折线 + 数据点 -->
+      <template v-if="type === 'line'">
+        <path v-if="area && pathArea" :d="pathArea" :fill="color" fill-opacity="0.14" />
+        <path v-if="pathLine" :d="pathLine" fill="none" :stroke="color" stroke-width="2" />
+        <circle
+          v-for="(p, i) in pts"
+          :key="'p' + i"
+          :cx="p.x"
+          :cy="p.y"
+          r="2.5"
+          :fill="color"
+        />
+      </template>
 
-      <!-- 折线 -->
-      <path v-if="pathLine" :d="pathLine" fill="none" :stroke="color" stroke-width="2" />
-
-      <!-- 数据点 -->
-      <circle
-        v-for="(p, i) in pts"
-        :key="'p' + i"
-        :cx="p.x"
-        :cy="p.y"
-        r="2.5"
-        :fill="color"
-      />
+      <!-- 柱状模式 -->
+      <template v-else>
+        <rect
+          v-for="(p, i) in pts"
+          :key="'bar' + i"
+          :x="p.x - barW / 2"
+          :y="p.y"
+          :width="barW"
+          :height="Math.max((H - padB) - p.y, 0)"
+          :fill="color"
+          rx="2"
+        >
+          <title>{{ p.label }}：{{ formatValue(p.value) }}</title>
+        </rect>
+      </template>
 
       <!-- hover 参考线 + 高亮点 -->
       <line
@@ -89,7 +103,7 @@
 import { computed, ref } from 'vue'
 
 const props = defineProps({
-  // 数据点：[{ label: 'yyyy-MM-dd', value: Number }]
+  // 数据点：[{ label: String, value: Number }]
   points: { type: Array, default: () => [] },
   color: { type: String, default: '#409eff' },
   area: { type: Boolean, default: false },
@@ -97,7 +111,9 @@ const props = defineProps({
   // 'zero' 从 0 起；'auto' 从最小值附近起（凸显增长趋势）
   yMinMode: { type: String, default: 'zero' },
   // 自定义数值格式化（如字节 -> MB/GB）
-  valueFormatter: { type: Function, default: null }
+  valueFormatter: { type: Function, default: null },
+  // 图表类型：'line' 折线（默认） | 'bar' 柱状
+  type: { type: String, default: 'line' }
 })
 
 const W = 800
@@ -130,9 +146,22 @@ const plotH = computed(() => H.value - padT - padB)
 
 function xAt(i) {
   const n = props.points.length
+  if (props.type === 'bar') {
+    // 柱状图：每个类目占据一个槽位，x 取槽位中心
+    const slot = plotW.value / n
+    return padL + slot * (i + 0.5)
+  }
   if (n <= 1) return padL + plotW.value / 2
   return padL + (plotW.value * i) / (n - 1)
 }
+
+// 柱状图柱子宽度
+const barW = computed(() => {
+  const n = props.points.length
+  if (n <= 0) return 0
+  const slot = plotW.value / n
+  return Math.min(slot * 0.5, 90)
+})
 function yAt(v) {
   const span = (maxV.value - minV.value) || 1
   return padT + plotH.value * (1 - (v - minV.value) / span)
@@ -178,6 +207,10 @@ const gridLines = computed(() => {
 const xLabels = computed(() => {
   const n = props.points.length
   if (!n) return []
+  if (props.type === 'bar') {
+    // 柱状图：直接显示类目标签
+    return props.points.map((p, i) => ({ x: xAt(i), text: p.label }))
+  }
   const step = Math.max(1, Math.ceil(n / 6))
   const arr = []
   for (let i = 0; i < n; i += step) {
