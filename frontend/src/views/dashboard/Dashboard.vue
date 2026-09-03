@@ -126,13 +126,13 @@ const stats = ref(null)
 const statCards = computed(() => [
   {
     label: '图纸文件数',
-    value: stats.value?.drawingCount || 0,
+    value: (stats.value?.drawingCount || 0) + ' 张',
     icon: Files,
     color: '#e6a23c'
   },
   {
     label: '活跃用户数',
-    value: stats.value?.activeUserCount || 0,
+    value: (stats.value?.activeUserCount || 0) + ' 人',
     icon: User,
     color: '#f56c6c'
   },
@@ -143,16 +143,16 @@ const statCards = computed(() => [
     color: '#409eff'
   },
   {
+    label: '今日下载',
+    value: (stats.value?.todayDownloadCount || 0) + ' 次',
+    icon: Download,
+    color: '#f56c6c'
+  },
+  {
     label: '总存储占用',
     value: formatBytes(stats.value?.totalStorageBytes),
     icon: Coin,
     color: '#67c23a'
-  },
-  {
-    label: '今日下载',
-    value: (stats.value?.todayDownloadCount || 0) + ' 次',
-    icon: Download,
-    color: '#722ed1'
   }
 ])
 
