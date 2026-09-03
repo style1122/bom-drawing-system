@@ -13,8 +13,8 @@
       <el-skeleton v-if="loading && !stats" :rows="6" animated />
 
       <template v-else-if="stats">
-        <el-row :gutter="20" style="margin-bottom: 20px">
-          <el-col :span="6" v-for="card in statCards" :key="card.label">
+        <el-row :gutter="20" style="margin-bottom: 20px" class="stat-row">
+          <el-col v-for="card in statCards" :key="card.label" style="flex: 1 1 0; min-width: 0;">
             <el-card shadow="hover">
               <div class="stat-card">
                 <div class="stat-icon" :style="{ backgroundColor: card.color }">
@@ -114,7 +114,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import {
-  Files, User, Upload, Coin
+  Files, User, Upload, Coin, Download
 } from '@element-plus/icons-vue'
 import { getStats } from '@/api/dashboard'
 import LineChart from '@/components/LineChart.vue'
@@ -147,6 +147,12 @@ const statCards = computed(() => [
     value: formatBytes(stats.value?.totalStorageBytes),
     icon: Coin,
     color: '#67c23a'
+  },
+  {
+    label: '今日下载',
+    value: (stats.value?.todayDownloadCount || 0) + ' 次',
+    icon: Download,
+    color: '#722ed1'
   }
 ])
 
@@ -229,6 +235,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.stat-row {
+  display: flex;
+}
+
 .stat-card {
   display: flex;
   align-items: center;

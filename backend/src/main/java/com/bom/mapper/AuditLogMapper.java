@@ -13,4 +13,7 @@ public interface AuditLogMapper extends BaseMapper<AuditLog> {
     List<AuditLog> findByUserId(@Param("userId") Long userId);
 
     List<AuditLog> findRecent(@Param("limit") int limit);
+
+    /** 今日（服务器当天）指定操作的记录数量，用于仪表盘统计 */
+    int countTodayByOperation(@Param("operation") String operation);
 }

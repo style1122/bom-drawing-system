@@ -31,4 +31,12 @@
         OFFSET 0 ROWS FETCH NEXT #{limit} ROWS ONLY
     </select>
 
+    <!-- 今日指定操作的记录数量（如统计今日下载） -->
+    <select id="countTodayByOperation" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM audit_log
+        WHERE operation = #{operation}
+          AND CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+    </select>
+
 </mapper>

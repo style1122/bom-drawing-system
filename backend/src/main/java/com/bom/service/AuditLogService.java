@@ -29,4 +29,8 @@ public class AuditLogService {
     public List<AuditLog> getRecent(int limit) {
         return auditLogMapper.findRecent(limit);
     }
+
+    public int countTodayByOperation(String operation) {
+        return auditLogMapper.countTodayByOperation(operation);
+    }
 }

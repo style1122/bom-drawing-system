@@ -77,6 +77,7 @@ public class DrawingController {
     @GetMapping("/download/{id}")
     public void download(@PathVariable Long id,
                          @RequestParam(required = false, defaultValue = "false") Boolean inline,
+                         HttpServletRequest request,
                          HttpServletResponse response) {
         try {
             Drawing drawing = drawingService.getById(id);
@@ -85,6 +86,14 @@ public class DrawingController {
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write("{\"code\":404,\"msg\":\"图纸不存在\",\"data\":null}");
                 return;
+            }
+
+            // 记录下载审计（失败不影响下载本身）
+            try {
+                Long uid = (Long) request.getAttribute("userId");
+                auditLogService.log(uid, "下载", "DRAWING", id, drawing.getDrawingName(), request.getRemoteAddr());
+            } catch (Exception ignored) {
+                logger.warn("记录下载审计失败 drawingId={}", id, ignored);
             }
 
             String filePath = drawingService.download(id);

@@ -43,6 +43,9 @@ public class DashboardController {
         // 图纸上传量与存储占用统计（每日上传、今日上传、总存储、增长趋势）
         data.putAll(dashboardService.getDrawingStats());
 
+        // 今日下载数量（按审计日志 operation='下载' 统计当天）
+        data.put("todayDownloadCount", auditLogService.countTodayByOperation("下载"));
+
         return Result.success(data);
     }
 }
