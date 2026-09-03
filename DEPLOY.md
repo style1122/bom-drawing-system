@@ -227,7 +227,7 @@ C:\apps\
 |----|---------------|---------------|
 | 旧回调地址 | `http://192.168.40.75:8080/bom/api/erp/subscribe/material` | — |
 | 新回调地址（直连后端） | — | `http://192.168.40.75:8080/api/erp/subscribe/material` |
-| 新回调地址（走 nginx 80） | — | `http://192.168.40.75/api/erp/subscribe/material` |
+| 新回调地址（走 nginx，nginx 部署于 10.1.1.15:80） | — | `http://10.1.1.15/api/erp/subscribe/material` |
 
 - 对应后端路由：`ErpSubscribeController` 类 `@RequestMapping("/api/erp/subscribe")` + `@PostMapping("/material")`。
 - 前端 `baseURL=/api` 本来就不带 `/bom`，**前端无需改动**。
@@ -248,4 +248,4 @@ C:\apps\
   ```bat
   curl http://192.168.40.75:8080/api/erp/subscribe/status
   ```
-- 若走 nginx 后仍不通，检查 `deploy\nginx\bom-drawing-system.conf` 的 `location /api/ ` 代理是否指向 `http://127.0.0.1:8080`。
+- 若走 nginx 后仍不通，检查 nginx 的 `location /api/ ` 代理是否指向后端 `http://192.168.40.75:8080`（本例 nginx 与后端跨机，非 `127.0.0.1`）。
