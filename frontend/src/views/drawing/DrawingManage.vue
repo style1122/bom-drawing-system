@@ -851,6 +851,15 @@ onMounted(() => {
 }
 
 /* 所有单元格内边距缩小 1px（竖向 12->11，横向 .cell 12->11），使表格更紧凑 */
+/* 统一表头高度：th 与 td 使用相同竖向 padding，避免自定义 header 插槽被撑高 */
+.page-container :deep(.el-table th.el-table__cell) {
+  padding: 10px 0;
+}
+
+.page-container :deep(.el-table th.el-table__cell .cell) {
+  line-height: 23px;
+}
+
 .page-container :deep(.el-table td.el-table__cell) {
   padding: 10px 0;
 }

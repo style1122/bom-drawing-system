@@ -4,7 +4,7 @@
       <template #header>
         <div class="register-header">
           <h2>用户注册</h2>
-          <p>BOM图纸管理系统</p>
+          <p>博耀集团图纸管理系统</p>
         </div>
       </template>
       <el-form

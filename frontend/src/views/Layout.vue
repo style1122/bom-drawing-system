@@ -2,8 +2,8 @@
   <el-container class="layout-container">
     <el-aside :width="isCollapse ? '64px' : '210px'" class="layout-aside">
       <div class="logo" @click="router.push(userStore.homePath)">
-        <span v-if="!isCollapse" class="logo-text">BOM图纸管理</span>
-        <span v-else class="logo-text-mini">BOM</span>
+        <span v-if="!isCollapse" class="logo-text">博耀集团图纸管理系统</span>
+        <span v-else class="logo-text-mini">博耀</span>
       </div>
       <el-menu
         :default-active="activeMenu"

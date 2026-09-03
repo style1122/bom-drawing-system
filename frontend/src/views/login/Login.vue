@@ -3,7 +3,7 @@
     <el-card class="login-card" shadow="always">
       <template #header>
         <div class="login-header">
-          <h2>BOM图纸管理系统</h2>
+          <h2>博耀集团图纸管理系统</h2>
         </div>
       </template>
       <el-form
