@@ -77,6 +77,34 @@
         SELECT * FROM drawing ORDER BY created_at DESC
     </select>
 
+    <!-- 近 days 天每日上传图纸数量：窗口从 (今天 - days + 1) 到今天 -->
+    <select id="countByDay" resultType="map">
+        SELECT CAST(created_at AS DATE) AS stat_date, COUNT(*) AS cnt
+        FROM drawing
+        WHERE created_at >= DATEADD(day, -#{days} + 1, CAST(GETDATE() AS DATE))
+        GROUP BY CAST(created_at AS DATE)
+        ORDER BY stat_date
+    </select>
+
+    <!-- 近 days 天每日新增文件占用空间（字节） -->
+    <select id="sumSizeByDay" resultType="map">
+        SELECT CAST(created_at AS DATE) AS stat_date, ISNULL(SUM(file_size), 0) AS total_size
+        FROM drawing
+        WHERE created_at >= DATEADD(day, -#{days} + 1, CAST(GETDATE() AS DATE))
+        GROUP BY CAST(created_at AS DATE)
+        ORDER BY stat_date
+    </select>
+
+    <!-- 今日上传图纸数量 -->
+    <select id="countToday" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM drawing WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+    </select>
+
+    <!-- 图纸文件总占用空间（字节） -->
+    <select id="sumTotalSize" resultType="java.lang.Long">
+        SELECT ISNULL(SUM(file_size), 0) FROM drawing
+    </select>
+
     <update id="update" parameterType="com.bom.entity.Drawing">
         UPDATE drawing
         <set>

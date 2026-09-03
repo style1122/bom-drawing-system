@@ -4,6 +4,7 @@ import com.bom.entity.AuditLog;
 import com.bom.mapper.DrawingMapper;
 import com.bom.mapper.SysUserMapper;
 import com.bom.service.AuditLogService;
+import com.bom.service.DashboardService;
 import com.bom.util.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +28,9 @@ public class DashboardController {
     @Autowired
     private AuditLogService auditLogService;
 
+    @Autowired
+    private DashboardService dashboardService;
+
     @GetMapping("/stats")
     public Result stats() {
         Map<String, Object> data = new HashMap<>();
@@ -35,6 +39,9 @@ public class DashboardController {
 
         List<AuditLog> recentLogs = auditLogService.getRecent(10);
         data.put("recentLogs", recentLogs);
+
+        // 图纸上传量与存储占用统计（每日上传、今日上传、总存储、增长趋势）
+        data.putAll(dashboardService.getDrawingStats());
 
         return Result.success(data);
     }

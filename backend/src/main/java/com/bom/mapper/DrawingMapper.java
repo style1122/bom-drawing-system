@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 public interface DrawingMapper extends BaseMapper<Drawing> {
 
@@ -32,4 +33,16 @@ public interface DrawingMapper extends BaseMapper<Drawing> {
     List<Drawing> findAll();
 
     int update(Drawing drawing);
+
+    /** 近 days 天每日上传图纸数量（按创建日期分组） */
+    List<Map<String, Object>> countByDay(@Param("days") int days);
+
+    /** 近 days 天每日新增文件占用空间（按创建日期分组，单位字节） */
+    List<Map<String, Object>> sumSizeByDay(@Param("days") int days);
+
+    /** 今日（服务器当天）上传图纸数量 */
+    int countToday();
+
+    /** 图纸文件总占用空间（字节，无记录返回 0） */
+    long sumTotalSize();
 }

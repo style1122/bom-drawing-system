@@ -31,6 +31,35 @@
           </el-col>
         </el-row>
 
+        <el-row :gutter="20" style="margin-bottom: 20px">
+          <el-col :span="14">
+            <el-card>
+              <template #header>
+                <span>每日上传图纸数量（近 30 天）</span>
+              </template>
+              <LineChart :points="dailyPoints" color="#409eff" :height="260" />
+            </el-card>
+          </el-col>
+          <el-col :span="10">
+            <el-card>
+              <template #header>
+                <span>总存储占用增长趋势（近 30 天）</span>
+              </template>
+              <div class="storage-summary">
+                当前总占用：<b>{{ formatBytes(totalStorage) }}</b>
+              </div>
+              <LineChart
+                :points="storagePoints"
+                color="#67c23a"
+                :area="true"
+                y-min-mode="auto"
+                :value-formatter="formatBytes"
+                :height="220"
+              />
+            </el-card>
+          </el-col>
+        </el-row>
+
         <el-card>
           <template #header>
             <span>最近操作日志</span>
@@ -64,9 +93,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import {
-  Files, User
+  Files, User, Upload, Coin
 } from '@element-plus/icons-vue'
 import { getStats } from '@/api/dashboard'
+import LineChart from '@/components/LineChart.vue'
 
 const loading = ref(false)
 const error = ref('')
@@ -84,8 +114,43 @@ const statCards = computed(() => [
     value: stats.value?.activeUserCount || 0,
     icon: User,
     color: '#f56c6c'
+  },
+  {
+    label: '今日上传',
+    value: (stats.value?.todayUploadCount || 0) + ' 张',
+    icon: Upload,
+    color: '#409eff'
+  },
+  {
+    label: '总存储占用',
+    value: formatBytes(stats.value?.totalStorageBytes),
+    icon: Coin,
+    color: '#67c23a'
   }
 ])
+
+// 每日上传折线图数据（近 30 天，按日期补齐）
+const dailyPoints = computed(() =>
+  (stats.value?.dailyUploadList || []).map(d => ({ label: d.date, value: d.count }))
+)
+// 存储增长趋势数据（累计字节）
+const storagePoints = computed(() =>
+  (stats.value?.storageTrendList || []).map(d => ({ label: d.date, value: d.cumulativeBytes }))
+)
+const totalStorage = computed(() => stats.value?.totalStorageBytes || 0)
+
+function formatBytes(bytes) {
+  if (bytes == null) return '-'
+  if (bytes < 1024) return bytes + ' B'
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let i = 0
+  let n = bytes / 1024
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024
+    i++
+  }
+  return n.toFixed(2) + ' ' + units[i]
+}
 
 const logs = computed(() => stats.value?.recentLogs || [])
 
@@ -160,5 +225,16 @@ onMounted(() => {
   font-size: 28px;
   font-weight: bold;
   color: #303133;
+}
+
+.storage-summary {
+  font-size: 13px;
+  color: #909399;
+  margin-bottom: 8px;
+}
+
+.storage-summary b {
+  color: #303133;
+  font-size: 16px;
 }
 </style>
