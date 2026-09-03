@@ -211,3 +211,41 @@ C:\apps\
 - 8 个实体加 `@TableName/@TableId/@TableField` 注解；7 个 Mapper 接口继承 `BaseMapper<T>`（原有 XML Mapper 语句保留，与 BaseMapper 共用）。
 - 兼容 XML Mapper 中的物理分页/联表 SQL；MyBatis-Plus 分页拦截器为 `BaseMapper`/`QueryWrapper` 分页提供支撑。
 - 密钥一律 `${ENV_VAR}` 占位，生产通过系统环境变量注入。
+
+---
+
+## 11. ERP 实时同步回调地址割接（上线必做）
+
+> **为什么必须改**：改造前 WAR 包的 context-path 由文件名决定为 `/bom`；改造后 Spring Boot 的
+> `server.servlet.context-path: /`，接口根路径**去掉了 `/bom`**。ERP 侧的「消息订阅 / 实时推送」
+> 回调地址如果仍是旧地址，ERP 推送会命中 404，**实时同步失效**。
+> 注意：**定时轮询不受影响**——轮询由本系统主动发起，走 `ERP_BASE_URL`（ESB），与回调地址无关。
+
+### 11.1 地址对照
+
+| 项 | 改造前（WAR） | 改造后（JAR） |
+|----|---------------|---------------|
+| 旧回调地址 | `http://192.168.40.75:8080/bom/api/erp/subscribe/material` | — |
+| 新回调地址（直连后端） | — | `http://192.168.40.75:8080/api/erp/subscribe/material` |
+| 新回调地址（走 nginx 80） | — | `http://192.168.40.75/api/erp/subscribe/material` |
+
+- 对应后端路由：`ErpSubscribeController` 类 `@RequestMapping("/api/erp/subscribe")` + `@PostMapping("/material")`。
+- 前端 `baseURL=/api` 本来就不带 `/bom`，**前端无需改动**。
+
+### 11.2 操作清单
+
+1. 登录 ERP 订阅管理界面，把「站点网址 / 调用 API」中的回调地址改为上面的**新地址**。
+   - ⚠️ 确认路径完整为 `.../subscribe/material`，不要写成被截断的 `mater`（少 `ial` 会 404）。
+2. 保存后，在 ERP 侧手动触发一次物料变更或测试推送，观察后端日志
+   `com.bom.erp.ErpSubscriptionService` 是否出现 `ERP订阅…` / `processNotification` 相关记录。
+3. 核对订阅号：`sscrid=MA01` 须与 `application.yml` 的 `erp.subscribe.sscrid` 一致；
+   若启用签名校验，须保证 ERP 侧登记的 `X-Subscribe-Secret` 与系统侧一致。
+
+### 11.3 验证
+
+- 后端日志出现实时同步记录 = 回调已接通。
+- 仍 404 时先 curl 确认后端可达：
+  ```bat
+  curl http://192.168.40.75:8080/api/erp/subscribe/status
+  ```
+- 若走 nginx 后仍不通，检查 `deploy\nginx\bom-drawing-system.conf` 的 `location /api/ ` 代理是否指向 `http://127.0.0.1:8080`。
