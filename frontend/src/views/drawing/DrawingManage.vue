@@ -854,4 +854,15 @@ onMounted(() => {
 .col-filter.active .el-icon {
   color: #409eff;
 }
+
+/* 页面整体字号缩小一号（14px -> 13px）：覆盖 Element Plus 基础字号变量，
+   使表格/按钮/标签/分页等组件统一跟随缩小 */
+.page-container {
+  --el-font-size-base: 13px;
+  font-size: 13px;
+}
+
+.page-container :deep(.el-table) {
+  font-size: 13px;
+}
 </style>
