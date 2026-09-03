@@ -108,7 +108,15 @@ const padT = 16
 const padB = 36
 
 const values = computed(() => props.points.map(p => Number(p.value) || 0))
-const maxV = computed(() => Math.max(1, ...values.value))
+// 从 0 起时，把最大值向上取整到 4 的整数倍，避免 Y 轴刻度出现 5/9/14/18 这种不整齐值
+const maxV = computed(() => {
+  const raw = Math.max(1, ...values.value)
+  if (props.yMinMode === 'zero') {
+    const tick = Math.max(1, Math.ceil(raw / 4))
+    return tick * 4
+  }
+  return raw
+})
 const minV = computed(() => {
   if (props.yMinMode === 'auto') {
     const m = Math.min(...values.value)

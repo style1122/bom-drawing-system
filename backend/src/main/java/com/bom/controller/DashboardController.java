@@ -37,7 +37,7 @@ public class DashboardController {
         data.put("drawingCount", drawingMapper.findAll().size());
         data.put("activeUserCount", sysUserMapper.findApprovedUsers().size());
 
-        List<AuditLog> recentLogs = auditLogService.getRecent(10);
+        List<AuditLog> recentLogs = auditLogService.getRecent(100);
         data.put("recentLogs", recentLogs);
 
         // 图纸上传量与存储占用统计（每日上传、今日上传、总存储、增长趋势）

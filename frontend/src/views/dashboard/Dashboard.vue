@@ -31,8 +31,8 @@
           </el-col>
         </el-row>
 
-        <el-row :gutter="20" style="margin-bottom: 20px">
-          <el-col :span="14">
+        <el-row :gutter="20" style="margin-bottom: 20px" class="chart-row">
+          <el-col :span="14" class="chart-col">
             <el-card>
               <template #header>
                 <span>每日上传图纸数量（近 30 天）</span>
@@ -40,21 +40,21 @@
               <LineChart :points="dailyPoints" color="#409eff" :height="260" />
             </el-card>
           </el-col>
-          <el-col :span="10">
+          <el-col :span="10" class="chart-col">
             <el-card>
               <template #header>
                 <span>总存储占用增长趋势（近 30 天）</span>
+                <span class="storage-summary">
+                  当前总占用：<b>{{ formatBytes(totalStorage) }}</b>
+                </span>
               </template>
-              <div class="storage-summary">
-                当前总占用：<b>{{ formatBytes(totalStorage) }}</b>
-              </div>
               <LineChart
                 :points="storagePoints"
                 color="#67c23a"
                 :area="true"
                 y-min-mode="auto"
                 :value-formatter="formatBytes"
-                :height="220"
+                :height="260"
               />
             </el-card>
           </el-col>
@@ -66,7 +66,7 @@
           </template>
           <el-table
             v-if="logs.length > 0"
-            :data="logs"
+            :data="paginatedLogs"
             style="width: 100%"
             size="small"
           >
@@ -83,6 +83,16 @@
               </template>
             </el-table-column>
           </el-table>
+          <el-pagination
+            v-if="logs.length > pageSize"
+            v-model:current-page="currentPage"
+            :page-size="pageSize"
+            :total="logs.length"
+            layout="total, prev, pager, next"
+            :pager-count="5"
+            size="small"
+            style="margin-top: 16px; justify-content: flex-end"
+          />
           <el-empty v-else description="暂无操作日志" />
         </el-card>
       </template>
@@ -153,6 +163,12 @@ function formatBytes(bytes) {
 }
 
 const logs = computed(() => stats.value?.recentLogs || [])
+const currentPage = ref(1)
+const pageSize = ref(10)
+const paginatedLogs = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return logs.value.slice(start, start + pageSize.value)
+})
 
 function formatLogTime(createdAt) {
   // 后端返回 yyyy-MM-dd HH:mm:ss 格式
@@ -180,6 +196,7 @@ async function fetchStats() {
   try {
     const res = await getStats()
     stats.value = res.data
+    currentPage.value = 1
   } catch (err) {
     error.value = '加载仪表盘数据失败'
     console.error('获取统计数据失败:', err)
@@ -227,14 +244,33 @@ onMounted(() => {
   color: #303133;
 }
 
+.chart-row {
+  display: flex;
+}
+
+.chart-col {
+  display: flex;
+}
+
+.chart-col > .el-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-col > .el-card :deep(.el-card__body) {
+  flex: 1;
+}
+
 .storage-summary {
+  float: right;
   font-size: 13px;
   color: #909399;
-  margin-bottom: 8px;
+  margin: 0;
 }
 
 .storage-summary b {
   color: #303133;
-  font-size: 16px;
+  font-size: 14px;
 }
 </style>
