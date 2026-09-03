@@ -160,11 +160,11 @@ const storagePoints = computed(() =>
 )
 const totalStorage = computed(() => stats.value?.totalStorageBytes || 0)
 
-// 图纸类型数量对比：PDF 图纸 / 三维图纸 / 工程图纸
+// 图纸类型数量对比：PDF 图纸 / 三维图纸 / 工程图纸（每类单独配色）
 const typePoints = computed(() => [
-  { label: 'PDF 图纸', value: stats.value?.pdfCount || 0 },
-  { label: '三维图纸', value: stats.value?.model3dCount || 0 },
-  { label: '工程图纸', value: stats.value?.engineeringCount || 0 }
+  { label: 'PDF 图纸', value: stats.value?.pdfCount || 0, color: '#409eff' },
+  { label: '三维图纸', value: stats.value?.model3dCount || 0, color: '#67c23a' },
+  { label: '工程图纸', value: stats.value?.engineeringCount || 0, color: '#e6a23c' }
 ])
 
 function formatBytes(bytes) {

@@ -63,7 +63,7 @@
           :y="p.y"
           :width="barW"
           :height="Math.max((H - padB) - p.y, 0)"
-          :fill="color"
+          :fill="p.color || color"
           rx="2"
         >
           <title>{{ p.label }}：{{ formatValue(p.value) }}</title>
@@ -86,7 +86,7 @@
         :cx="hover.x"
         :cy="hover.y"
         r="4"
-        :fill="color"
+        :fill="hover.color || color"
         stroke="#fff"
         stroke-width="2"
       />
@@ -172,7 +172,8 @@ const pts = computed(() =>
     x: xAt(i),
     y: yAt(Number(p.value) || 0),
     label: p.label,
-    value: Number(p.value) || 0
+    value: Number(p.value) || 0,
+    color: p.color || props.color
   }))
 )
 
