@@ -240,11 +240,36 @@ public class ErpSubscriptionService {
                 }
             }
 
-            // 游标推进：仅在有异动数据时取本次返回的最后一笔最后修改时间与主键
+            // 游标推进：从本页明细中取"最后处理的一笔"作为水位。
+            // 注意：sscrquery 响应根级的 lastoperatetime/pkvalues 可能为空或回显请求时间，
+            // 直接用会导致时间戳游标永远不前进、增量同步退化为每轮全量重拉。
+            // 明细级字段（detail.lastoperatetime / detail.pkvalues）才是真实水位，据此推进。
             if (!page.getDetail().isEmpty()) {
                 anyDetail = true;
-                timestamp = page.getLastoperatetime();
-                pkvalues = page.getPkvalues();
+                ErpSscrDetail pivot = null;
+                for (ErpSscrDetail d : page.getDetail()) {
+                    String dTime = d.getLastoperatetime() == null ? "" : d.getLastoperatetime();
+                    String dPk = (d.getPkvalues() != null && !d.getPkvalues().isEmpty())
+                            ? d.getPkvalues().get(0) : "";
+                    if (pivot == null) {
+                        pivot = d;
+                        continue;
+                    }
+                    String pTime = pivot.getLastoperatetime() == null ? "" : pivot.getLastoperatetime();
+                    String pPk = (pivot.getPkvalues() != null && !pivot.getPkvalues().isEmpty())
+                            ? pivot.getPkvalues().get(0) : "";
+                    // 时间更大 → 更新；时间相等且主键更大 → 更新（格式需 yyyy-MM-dd HH:mm:ss 一致，字典序即时间序）
+                    boolean newer = dTime.compareTo(pTime) > 0;
+                    boolean sameTimeBiggerPk = dTime.equals(pTime) && dPk.compareTo(pPk) > 0;
+                    if (newer || sameTimeBiggerPk) {
+                        pivot = d;
+                    }
+                }
+                if (pivot != null) {
+                    timestamp = pivot.getLastoperatetime() == null ? "" : pivot.getLastoperatetime();
+                    pkvalues = pivot.getPkvalues() == null
+                            ? new ArrayList<>() : new ArrayList<>(pivot.getPkvalues());
+                }
             }
 
             hasMore = page.isHasnext();
