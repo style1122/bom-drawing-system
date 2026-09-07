@@ -246,7 +246,9 @@ public class ErpSubscriptionService {
     private Map<String, Object> pullChangesInternal() {
         String tsKey = cursorKey("timestamp");
         String pkKey = cursorKey("pkvalues");
-        String timestamp = readCursor(tsKey, initTimestamp);
+        String oldTs = readCursor(tsKey, initTimestamp);   // 上一轮水位，用于边界去重
+        String oldPk = readCursor(pkKey, "");
+        String timestamp = oldTs;                           // 本轮查询游标（随翻页推进）
         String pkValuesStr = readCursor(pkKey, "");
 
         int upserted = 0;
@@ -262,6 +264,14 @@ public class ErpSubscriptionService {
             pages++;
 
             for (ErpSscrDetail detail : page.getDetail()) {
+                String dTime = detail.getLastoperatetime() == null ? "" : detail.getLastoperatetime();
+                String dPk = (detail.getPkvalues() != null && !detail.getPkvalues().isEmpty())
+                        ? detail.getPkvalues().get(0) : "";
+                // ERP sscrquery 取 lastoperatetime >= 游标（含边界），停在游标时间戳的那条记录每轮都被重新拉回；
+                // 已在上一轮处理过的(时间戳,主键)这里跳过，避免"无改动却每轮显示增删改"的重复同步。
+                if (!isStrictlyAfter(dTime, dPk, oldTs, oldPk)) {
+                    continue;
+                }
                 String code = detail.getPkvalues() == null || detail.getPkvalues().isEmpty()
                         ? null : detail.getPkvalues().get(0);
                 try {
@@ -388,5 +398,21 @@ public class ErpSubscriptionService {
             return "";
         }
         return String.join(",", values);
+    }
+
+    /**
+     * 判断 (aTime,aPk) 是否严格晚于 (bTime,bPk)：先比最后修改时间，时间相同再比主键（字典序）。
+     * 用于订阅增量拉取的边界去重：ERP sscrquery 使用 lastoperatetime >= 游标（含边界），
+     * 恰好停在游标时间戳的记录每轮都会被重新拉回，用本方法识别并跳过已处理过的边界记录。
+     */
+    private boolean isStrictlyAfter(String aTime, String aPk, String bTime, String bPk) {
+        if (aTime == null) aTime = "";
+        if (aPk == null) aPk = "";
+        if (bTime == null) bTime = "";
+        if (bPk == null) bPk = "";
+        int cmp = aTime.compareTo(bTime);
+        if (cmp > 0) return true;
+        if (cmp < 0) return false;
+        return aPk.compareTo(bPk) > 0;
     }
 }
