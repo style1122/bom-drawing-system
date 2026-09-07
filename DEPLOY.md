@@ -249,3 +249,69 @@ C:\apps\
   curl http://192.168.40.75:8080/api/erp/subscribe/status
   ```
 - 若走 nginx 后仍不通，检查 nginx 的 `location /api/ ` 代理是否指向后端 `http://192.168.40.75:8080`（本例 nginx 与后端跨机，非 `127.0.0.1`）。
+
+---
+
+## 12. ERP 订阅同步修复部署与游标重置（排障清单）
+
+> 已知两类故障，均已修复并合入 `main`：
+> - **(a) 增量游标不前进**：旧逻辑取响应根级空字段做水位，导致每轮重拉同一批（提交 `9e9b954`）。
+> - **(b) 兜底轮询静默失效（"只有重启才同步"）**：Spring 默认调度线程池=1，全系统仅一个 `@Scheduled` 任务；
+>   该轮在 `ErpApiClient.sscrQuery`（ERP `10.1.1.15:860`）卡死（半开连接 / 旧包无限翻页）时占用唯一调度线程，
+>   后续所有轮询排队不起跑（提交 `82f56a8`：拉取改独立线程池 + `poll.timeout-sec` 硬超时兜底 + `MAX_PULL_PAGES` 翻页上限）。
+
+### 12.1 部署步骤（含构建）
+
+1. **构建机打包**（本环境 Maven 不可用，必须上构建机）：
+   ```bat
+   mvn clean package -DskipTests
+   ```
+   产物 `backend\target\bom-drawing-system.jar` 已内含 `9e9b954` + `82f56a8`。
+2. 停止服务 → 替换 `bom-drawing-system.jar` → 启动（见第 6 / 9 节升级流程）。
+
+### 12.2 重置增量游标（部署后必做）
+
+游标 `material.MA01.timestamp` 可能停留在旧值（如 `2018-01-01 00:00:00`）。若不重置，重启后会从该时间戳回放大量历史异动；
+修复后游标由明细级水位正确推进，重置为当前时间即可从"现在"开始增量：
+
+```sql
+UPDATE erp_sync_cursor
+SET cursor_value = CONVERT(varchar, GETDATE(), 120)
+WHERE cursor_key = 'material.MA01.timestamp';
+
+-- 确认游标行存在：
+SELECT * FROM erp_sync_cursor WHERE cursor_key LIKE 'material.MA01.%';
+
+-- 如需从头全量追（谨慎，会回放全部历史异动）：
+-- UPDATE erp_sync_cursor SET cursor_value = '2018-01-01 00:00:00' WHERE cursor_key = 'material.MA01.timestamp';
+```
+
+### 12.3 核对实时回调（消息订阅）
+
+参考第 11 节，重点确认：
+
+1. ERP 订阅管理里回调地址为**当前部署地址** `.../api/erp/subscribe/material`，未被旧 `/bom` 前缀或旧 IP/端口拖累。
+2. `erp.subscribe.secret`（`application.yml` 默认空）：若部署环境被设为**非空**，ERP 回调必须带 `X-Subscribe-Secret` 头，
+   否则 `ErpSubscribeController` 返回 `401 订阅密钥校验失败` 静默拒绝（实时同步"没了"却无感）。
+3. **验证**：在 ERP 侧触发一次物料增删改，后端日志应出现
+   `收到ERP订阅通知报文` → `处理ERP订阅通知` → `订阅通知直连同步完成`。
+
+### 12.4 验证兜底轮询已恢复（关键）
+
+- **正常**：每 5 分钟 `scheduling-1` 线程输出 `ERP订阅同步完成：新增/修改 N 条，删除 M 条，共 K 页`。
+- **异常兜底（ERP 接口卡死时）**：不再静默空窗，而是输出
+  `ERP订阅轮询在 240s 内未结束，强制终止本轮（ERP 接口可能卡死），等待下次调度`，且下一轮仍会尝试
+  → 表明调度线程不再被长期占用（修复生效）。
+- **仍静默失效**：若连续 10+ 分钟无任何 `scheduling-1` / `ERP订阅同步完成` 日志，说明仍有阻塞，
+  需查 ERP `10.1.1.15:860` 连通性与 `ErpApiClient` 的 `connect-timeout`(10s) / `read-timeout`(120s)。
+
+### 12.5 相关配置项
+
+| 配置（application.yml） | 默认 | 说明 |
+|--------------------------|------|------|
+| `erp.subscribe.enabled` | `true` | 订阅同步总开关 |
+| `erp.subscribe.poll.enabled` | `true` | 5 分钟兜底轮询开关 |
+| `erp.subscribe.poll.interval-ms` | `300000` | 轮询间隔（毫秒） |
+| `erp.subscribe.poll.timeout-sec` | `240` | 单轮硬超时（`82f56a8` 新增；ERP 卡死时保护调度线程） |
+| `erp.subscribe.sscrid` | `MA01` | 订阅号，须与 ERP 侧一致 |
+| `erp.subscribe.secret` | （空） | 回调密钥；非空时 ERP 须带 `X-Subscribe-Secret` 头 |
