@@ -88,6 +88,7 @@ erp:
     poll:
       enabled: true
       interval-ms: 300000
+      timeout-sec: 240
 
 # =============================================================================
 # 日志级别（具体 appender 见 logback-spring.xml）

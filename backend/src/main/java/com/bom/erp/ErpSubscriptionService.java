@@ -16,7 +16,13 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 正航 T9 ERP 订阅同步服务。
@@ -29,6 +35,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ErpSubscriptionService {
 
     private static final Logger logger = LoggerFactory.getLogger(ErpSubscriptionService.class);
+
+    /** 单轮订阅查询最大翻页数：防御极端情况下无限翻页长期占用调度线程 */
+    private static final int MAX_PULL_PAGES = 500;
+
+    /** 轮询执行线程命名序号 */
+    private static final AtomicInteger POLL_THREAD_SEQ = new AtomicInteger();
 
     @Value("${erp.subscribe.enabled:true}")
     private boolean subscribeEnabled;
@@ -43,6 +55,21 @@ public class ErpSubscriptionService {
     /** 兜底轮询开关：实时通知正常时可关闭；默认开启 */
     @Value("${erp.subscribe.poll.enabled:true}")
     private boolean pollEnabled;
+
+    /** 单轮兜底轮询的硬超时（秒）：超时则强制终止本轮，避免 ERP 接口卡死占用调度线程 */
+    @Value("${erp.subscribe.poll.timeout-sec:240}")
+    private int pollTimeoutSec;
+
+    /**
+     * 独立线程池执行实际拉取：与 Spring 调度线程（默认仅 1 条）隔离。
+     * 即使某轮 ERP 调用卡死，调度线程也能在超时后归还并继续排下一轮，
+     * 杜绝"单线程卡死 → 全部定时轮询静默失效（只有重启才同步）"的问题。
+     */
+    private final ExecutorService pullExecutor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "erp-subscribe-poll-" + POLL_THREAD_SEQ.incrementAndGet());
+        t.setDaemon(true);
+        return t;
+    });
 
     @Autowired
     private ErpApiClient erpApiClient;
@@ -84,7 +111,22 @@ public class ErpSubscriptionService {
         if (!subscribeEnabled || !pollEnabled) {
             return;
         }
-        pullChanges();
+        // 关键：实际拉取放到独立线程并以超时兜底，避免 ERP 接口卡死（半开连接 / 无限翻页）
+        // 占住 Spring 默认的唯一调度线程，导致后续所有定时轮询静默失效（表现为"只有重启才同步"）。
+        try {
+            Future<Map<String, Object>> future = pullExecutor.submit(this::pullChanges);
+            try {
+                future.get(pollTimeoutSec, TimeUnit.SECONDS);
+            } catch (TimeoutException te) {
+                future.cancel(true);
+                logger.error("ERP订阅轮询在 {}s 内未结束，强制终止本轮（ERP 接口可能卡死），等待下次调度",
+                        pollTimeoutSec);
+            } catch (Exception e) {
+                logger.error("ERP订阅轮询执行异常: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            logger.error("ERP订阅轮询提交失败: {}", e.getMessage());
+        }
     }
 
     /**
@@ -215,7 +257,7 @@ public class ErpSubscriptionService {
         boolean anyDetail = false;
         List<String> pkvalues = parsePkvalues(pkValuesStr);
 
-        while (hasMore) {
+        while (hasMore && pages < MAX_PULL_PAGES) {
             ErpSscrQueryResult page = erpApiClient.sscrQuery(sscrid, timestamp, pkvalues);
             pages++;
 
@@ -277,6 +319,11 @@ public class ErpSubscriptionService {
                 logger.warn("订阅查询返回 hasnext=true 但无分页数据，停止翻页");
                 hasMore = false;
             }
+        }
+
+        if (pages >= MAX_PULL_PAGES) {
+            logger.warn("订阅查询达到最大翻页上限 {}，强制结束本轮，防止调度线程被长期占用", MAX_PULL_PAGES);
+            hasMore = false;
         }
 
         // 无任何异动时不写游标，减少空轮询的数据库开销
