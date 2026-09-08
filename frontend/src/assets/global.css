@@ -55,3 +55,34 @@ a {
   justify-content: center;
   background: linear-gradient(135deg, #1a365d 0%, #2d5f8a 50%, #1a365d 100%);
 }
+
+/* ===========================================================================
+   博耀图纸管理系统 — 通用表格紧凑风格（与图纸管理页 DrawingManage.vue 一致）
+   用法：给表格外层容器加 class="bom-table-page"，内部用
+        <el-table border stripe highlight-current-row> 即可获得同款外观。
+   =========================================================================== */
+.bom-table-page {
+  --el-font-size-base: 12px;
+  font-size: 12px;
+}
+
+.bom-table-page .el-table {
+  font-size: 12px;
+}
+
+/* 统一表头/单元格高度：th 与 td 使用相同竖向 padding，避免自定义 header 插槽被撑高 */
+.bom-table-page .el-table th.el-table__cell {
+  padding: 10px 0;
+}
+
+.bom-table-page .el-table th.el-table__cell .cell {
+  line-height: 23px;
+}
+
+.bom-table-page .el-table td.el-table__cell {
+  padding: 10px 0;
+}
+
+.bom-table-page .el-table .cell {
+  padding: 0 10px;
+}
